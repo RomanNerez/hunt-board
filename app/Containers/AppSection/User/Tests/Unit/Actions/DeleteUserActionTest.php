@@ -14,7 +14,7 @@ final class DeleteUserActionTest extends UnitTestCase
     public function testCanDeleteAnotherUser(): void
     {
         $user = User::factory()->createOne();
-        $this->actingAs($user, 'api');
+        $this->actingAs($user, 'web');
         $anotherUser = User::factory()->createOne();
 
         $action = app(DeleteUserAction::class);
@@ -30,7 +30,7 @@ final class DeleteUserActionTest extends UnitTestCase
         $this->expectException(FailedToDeleteUser::class);
 
         $user = User::factory()->createOne();
-        $this->actingAs($user, 'api');
+        $this->actingAs($user, 'web');
         $action = app(DeleteUserAction::class);
 
         $action->run($user->id);

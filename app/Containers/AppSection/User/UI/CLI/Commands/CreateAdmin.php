@@ -8,7 +8,7 @@ use App\Ship\Parents\Commands\Command as ParentCommand;
 final class CreateAdmin extends ParentCommand
 {
     protected $signature = 'create:admin';
-    protected $description = 'Create a new User with the ADMIN role';
+    protected $description = 'Create a new verified admin User';
 
     public function handle(CreateAdminAction $action): void
     {

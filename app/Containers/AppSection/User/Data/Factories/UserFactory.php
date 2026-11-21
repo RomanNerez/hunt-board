@@ -2,7 +2,6 @@
 
 namespace App\Containers\AppSection\User\Data\Factories;
 
-use App\Containers\AppSection\Authorization\Data\Repositories\RoleRepository;
 use App\Containers\AppSection\User\Enums\Gender;
 use App\Containers\AppSection\User\Models\User;
 use App\Ship\Parents\Factories\Factory as ParentFactory;
@@ -31,13 +30,6 @@ final class UserFactory extends ParentFactory
             'gender' => fake()->randomElement(['male', 'female', 'unspecified']),
             'birth' => fake()->date(),
         ];
-    }
-
-    public function superAdmin(): self
-    {
-        return $this->afterCreating(function (User $user) {
-            app(RoleRepository::class)->makeSuperAdmin($user);
-        });
     }
 
     public function unverified(): self

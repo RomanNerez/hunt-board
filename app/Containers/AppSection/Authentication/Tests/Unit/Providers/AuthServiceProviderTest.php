@@ -13,7 +13,6 @@ use PHPUnit\Framework\Attributes\TestWith;
 final class AuthServiceProviderTest extends UnitTestCase
 {
     #[TestWith(['web'])]
-    #[TestWith(['api'])]
     public function testActiveGuardReturnsCorrectGuard(string $guard): void
     {
         $user = User::factory()->createOne();

@@ -18,13 +18,6 @@ final class UserFactoryTest extends UnitTestCase
         $this->assertInstanceOf(User::class, $user);
     }
 
-    public function testCanCreateAdminUser(): void
-    {
-        $user = User::factory()->superAdmin()->createOne();
-
-        $this->assertTrue($user->isSuperAdmin());
-    }
-
     public function testCanCreateUnverifiedUser(): void
     {
         $user = User::factory()->unverified()->createOne();

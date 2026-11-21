@@ -65,15 +65,6 @@ final class UserTest extends UnitTestCase
         $this->assertSame('User', $user->getResourceKey());
     }
 
-    public function testCanAuthenticateUsingEmail(): void
-    {
-        $user = User::factory()->createOne();
-
-        $result = (new User())->findForPassport($user->email);
-
-        $this->assertTrue($user->is($result));
-    }
-
     public function testLowerCasesEmailOnAccess(): void
     {
         $original = 'GanDalf@thE.Gray';
@@ -83,16 +74,5 @@ final class UserTest extends UnitTestCase
 
         $this->assertSame($expectedGet, $user->email);
         $this->assertSame($expectedSet, DB::query()->from('users')->find($user->id)->email);
-    }
-
-    public function testIsSuperAdmin(): void
-    {
-        $user = User::factory()->createOne();
-
-        $this->assertFalse($user->isSuperAdmin());
-
-        $user = User::factory()->superAdmin()->createOne();
-
-        $this->assertTrue($user->isSuperAdmin());
     }
 }
