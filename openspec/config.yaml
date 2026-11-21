@@ -1,32 +1,44 @@
 schema: spec-driven
 
-# Project context (optional)
-# Add only constraints that should guide OpenSpec artifacts and workflows.
-# Include constraints an agent cannot infer by reading the code.
-# Keep general project documentation and discoverable codebase facts out.
-# Example:
-#   context: |
-#     Designs and tasks must cover Windows, macOS, and Linux
-#     Write all artifacts in Spanish
+context: |
+  Мова артефактів: усі артефакти (proposal, design, specs, tasks) пишуться українською мовою.
+  Англійською залишаються лише службові елементи, на які спирається парсер OpenSpec:
+  - заголовки секцій шаблонів: "## Why", "## What Changes", "## Capabilities", "### New Capabilities",
+    "### Modified Capabilities", "## Impact", "## Context", "## Goals / Non-Goals", "## Decisions",
+    "## Risks / Trade-offs", "## Purpose", "## Requirements";
+  - дельта-заголовки: "## ADDED Requirements", "## MODIFIED Requirements", "## REMOVED Requirements",
+    "## RENAMED Requirements";
+  - префікси "### Requirement:" і "#### Scenario:" (назва вимоги чи сценарію після двокрапки — українською);
+  - нормативні ключові слова SHALL / MUST у тексті вимоги та маркери **WHEN** / **THEN** / **AND** у сценаріях;
+  - назви capabilities і змін (kebab-case латиницею), шляхи до файлів, імена класів, методів, команд і код.
+  Приклад вимоги: "Система SHALL надсилати користувачу лист підтвердження після реєстрації."
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always state what is out of scope
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+  Технічні обмеження проєкту:
+  - Apiato 13 (Laravel 12, PHP 8.4), архітектура Porto: UI → Action → Task → Repository/Model.
+  - Адмін-панель Filament 5 — основний UI; Filament-код живе всередині контейнерів (UI/Filament), ніколи в app/Filament.
+  - Усі записи даних із Filament проходять через Actions контейнера, а не через вбудовану Eloquent-персистенцію Filament.
+  - Авторизація — через Policies контейнера; canAccessPanel() пускає всіх.
+  - Тести — тільки PHPUnit (класи), Pest не використовується.
+  - Без коментарів у коді; PHPDoc лише з тегами (див. AGENTS.md).
 
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+rules:
+  proposal:
+    - Пиши українською; чітко зазнач, що НЕ входить у зміну.
+    - Вказуй, які контейнери (app/Containers/<Section>/<Container>) зачіпає зміна.
+  design:
+    - Пиши українською; для кожного рішення наводь обґрунтування та розглянуті альтернативи.
+    - Описуй розміщення класів за структурою Porto та Filament-усередині-контейнера.
+  specs:
+    - Назви вимог і сценаріїв, текст вимог і сценаріїв — українською; SHALL/MUST та WHEN/THEN/AND — англійською.
+    - Кожна вимога має щонайменше один сценарій.
+  tasks:
+    - Формулювання задач — українською, кожна задача невелика й перевірювана.
+    - Для змін поведінки додавай задачі на PHPUnit-тести та запуск vendor/bin/phpstan analyse.
+
+operations:
+  apply:
+    guidance:
+      - Звітуй про хід виконання українською.
+  archive:
+    guidance:
+      - Підсумок архівації пиши українською.
