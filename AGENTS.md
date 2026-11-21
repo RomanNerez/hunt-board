@@ -13,6 +13,7 @@ The stack is defined in `docker-compose.yml`: `app` (PHP-FPM, Vite on 5173), `ng
 ```bash
 docker compose up -d                                   # add -f docker-compose.yml -f docker-compose.local.yml for mailhog
 docker compose exec app php artisan migrate
+docker compose exec app php artisan storage:link       # public/storage -> storage/app/public, needed for company logos
 docker compose exec app php artisan create:admin       # interactive; creates a verified user who can log into /admin
 docker compose exec app npm run dev                    # or npm run build
 ```

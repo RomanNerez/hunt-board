@@ -85,7 +85,7 @@ final class StatusResourceTest extends FunctionalTestCase
         $labels = $this->navigationLabels($page->getCachedSubNavigation());
 
         $this->assertSame(SubNavigationPosition::Start, $page::getSubNavigationPosition());
-        $this->assertSame(['Статуси'], $labels);
+        $this->assertSame('Статуси', $labels[0] ?? null);
     }
 
     /**

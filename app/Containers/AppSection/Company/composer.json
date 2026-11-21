@@ -1,0 +1,8 @@
+{
+    "name": "apiato/company",
+    "description": "Company Container",
+    "type": "apiato-container",
+    "require": {
+        "spatie/laravel-medialibrary": "^11"
+    }
+}
