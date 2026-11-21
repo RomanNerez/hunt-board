@@ -1,0 +1,95 @@
+services:
+  app:
+    build:
+      args:
+        user: hunt-board
+        uid: 1001
+      context: docker-compose/app
+      dockerfile: Dockerfile
+    image: hunt-board
+    container_name: hunt-board-app
+    restart: unless-stopped
+    working_dir: /var/www/
+    ports:
+      - 5173:5173
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./:/var/www
+      - ./phpstan_cache:/var/www/phpstan_cache
+    networks:
+      - hunt-board
+
+  nginx:
+    image: nginx
+    container_name: hunt-board-nginx
+    restart: unless-stopped
+    ports:
+      - 8000:80
+    volumes:
+      - ./docker-compose/nginx/logs:/var/log/nginx
+      - ./:/var/www
+      - ./docker-compose/nginx:/etc/nginx/conf.d/
+      - ./public:/var/www/public:ro
+      - ./storage/app:/var/www/storage/app:ro
+    networks:
+      - hunt-board
+
+  db:
+    image: postgres:16
+    container_name: hunt-board-db
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - ./docker-compose/postgres:/var/lib/postgresql/data
+    env_file:
+      - ./.env.db
+    networks:
+      - hunt-board
+
+  redis:
+    image: redis:alpine
+    container_name: hunt-board-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --appendonly yes
+      --requirepass "${REDIS_PASSWORD:-password}"
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - hunt-board
+
+  supervisor:
+    build:
+      args:
+        user: hunt-board
+        uid: 1001
+      context: docker-compose/supervisor
+      dockerfile: Dockerfile
+    image: hunt-board-supervisor
+    container_name: hunt-board-supervisor
+    restart: unless-stopped
+    working_dir: /var/www/
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./:/var/www
+      - /var/www/node_modules
+    depends_on:
+      - db
+      - redis
+    networks:
+      - hunt-board
+
+networks:
+  hunt-board:
+    driver: bridge
+
+volumes:
+  redis-data:
+  rabbitmq-data:
+

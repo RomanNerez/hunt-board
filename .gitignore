@@ -38,3 +38,6 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Laravel
+/docker-compose/postgres

@@ -1,0 +1,14 @@
+services:
+  mailhog:
+    restart: always
+    build: docker-compose/mailhog
+    image: hunt-board-mailhog
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+    networks:
+      - hunt-board
+
+networks:
+  hunt-board:
+    driver: bridge
