@@ -5,9 +5,11 @@ namespace App\Containers\AppSection\User\Models;
 use App\Containers\AppSection\User\Data\Collections\UserCollection;
 use App\Containers\AppSection\User\Enums\Gender;
 use App\Ship\Parents\Models\UserModel as ParentUserModel;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 
-final class User extends ParentUserModel
+final class User extends ParentUserModel implements FilamentUser
 {
     protected $fillable = [
         'name',
@@ -28,6 +30,11 @@ final class User extends ParentUserModel
         'gender' => Gender::class,
         'birth' => 'immutable_date',
     ];
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return true;
+    }
 
     public function newCollection(array $models = []): UserCollection
     {
