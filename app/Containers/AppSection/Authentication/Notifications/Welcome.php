@@ -20,7 +20,7 @@ final class Welcome extends ParentNotification implements ShouldQueue
     public function toMail(User $notifiable): MailMessage
     {
         return (new MailMessage())
-            ->subject('Welcome to ' . config('app.name'))
-            ->line('Thank you for registering ' . $notifiable->name);
+            ->subject('Ласкаво просимо до ' . config('app.name'))
+            ->line('Дякуємо за реєстрацію, ' . $notifiable->name);
     }
 }

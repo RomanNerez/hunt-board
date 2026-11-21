@@ -23,11 +23,13 @@ final class StatusForm
         return $schema
             ->components([
                 TextInput::make('name')
+                    ->label('Назва')
                     ->required()
                     ->maxLength(255)
                     ->unique(ignoreRecord: true)
                     ->live(debounce: 300),
                 ToggleButtons::make('color')
+                    ->label('Колір')
                     ->options(self::colorOptions())
                     ->enum(StatusColor::class)
                     ->rule(new Enum(StatusColor::class))
@@ -69,6 +71,6 @@ final class StatusForm
             return new HtmlString('');
         }
 
-        return $statusColor->renderBadge(is_string($name) && '' !== $name ? $name : __('Preview'));
+        return $statusColor->renderBadge(is_string($name) && '' !== $name ? $name : 'Приклад');
     }
 }

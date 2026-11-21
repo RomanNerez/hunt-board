@@ -102,7 +102,7 @@ final class ManageStatusesTest extends FunctionalTestCase
                 $options = $field->getOptions();
 
                 $this->assertSame(array_column(StatusColor::cases(), 'value'), array_keys($options));
-                $this->assertEquals(StatusColor::PINK->renderBadge('Pink'), $options['pink']);
+                $this->assertEquals(StatusColor::PINK->renderBadge('Рожевий'), $options['pink']);
 
                 return true;
             });

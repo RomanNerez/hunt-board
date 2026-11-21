@@ -24,6 +24,7 @@ final class ManageStatuses extends ManageRecords
     {
         return [
             CreateAction::make()
+                ->modalHeading('Створити статус')
                 ->using(static function (array $data): Status {
                     /** @var array<string, mixed> $attributes */
                     $attributes = $data;

@@ -17,7 +17,7 @@ final class WelcomeTest extends UnitTestCase
 
         $result = $notification->toMail($user);
 
-        $this->assertSame('Welcome to ' . config('app.name'), $result->subject);
-        $this->assertSame(['Thank you for registering ' . $user->name], $result->introLines);
+        $this->assertSame('Ласкаво просимо до ' . config('app.name'), $result->subject);
+        $this->assertSame(['Дякуємо за реєстрацію, ' . $user->name], $result->introLines);
     }
 }

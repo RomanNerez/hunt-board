@@ -29,7 +29,20 @@ enum StatusColor: string implements HasLabel
      */
     public function getLabel(): string
     {
-        return ucfirst($this->value);
+        return match ($this) {
+            self::GRAY => 'Сірий',
+            self::RED => 'Червоний',
+            self::ORANGE => 'Помаранчевий',
+            self::AMBER => 'Бурштиновий',
+            self::LIME => 'Лаймовий',
+            self::GREEN => 'Зелений',
+            self::TEAL => 'Бірюзовий',
+            self::CYAN => 'Блакитний',
+            self::BLUE => 'Синій',
+            self::INDIGO => 'Індиго',
+            self::VIOLET => 'Фіолетовий',
+            self::PINK => 'Рожевий',
+        };
     }
 
     /**

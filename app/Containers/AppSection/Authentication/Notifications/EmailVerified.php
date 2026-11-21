@@ -20,7 +20,7 @@ final class EmailVerified extends ParentNotification implements ShouldQueue
     public function toMail(User $notifiable): MailMessage
     {
         return (new MailMessage())
-            ->subject('Email Verified')
-            ->line('Your email has been verified.');
+            ->subject('Email підтверджено')
+            ->line('Вашу адресу електронної пошти підтверджено.');
     }
 }

@@ -38,6 +38,26 @@ final class StatusResource extends Resource
     protected static string|null $recordTitleAttribute = 'name';
 
     /**
+     * @var string|null
+     */
+    protected static string|null $modelLabel = 'Cтатус';
+
+    /**
+     * @var string|null
+     */
+    protected static string|null $pluralModelLabel = 'Cтатуси';
+
+    /**
+     * @var string|null
+     */
+    protected static string|null $navigationLabel = 'Статуси';
+
+    /**
+     * @var bool
+     */
+    protected static bool $hasTitleCaseModelLabel = false;
+
+    /**
      * @param Schema $schema
      *
      * @return Schema

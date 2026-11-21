@@ -17,7 +17,7 @@ final class EmailVerifiedTest extends UnitTestCase
 
         $result = $notification->toMail($user);
 
-        $this->assertSame('Email Verified', $result->subject);
-        $this->assertSame(['Your email has been verified.'], $result->introLines);
+        $this->assertSame('Email підтверджено', $result->subject);
+        $this->assertSame(['Вашу адресу електронної пошти підтверджено.'], $result->introLines);
     }
 }

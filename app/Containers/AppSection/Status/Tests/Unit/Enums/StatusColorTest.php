@@ -30,9 +30,22 @@ final class StatusColorTest extends UnitTestCase
     /**
      * @return void
      */
+    public function testEveryPresetHasDistinctUkrainianLabel(): void
+    {
+        $labels = array_map(static fn (StatusColor $color): string => $color->getLabel(), StatusColor::cases());
+
+        $this->assertSame(
+            ['Сірий', 'Червоний', 'Помаранчевий', 'Бурштиновий', 'Лаймовий', 'Зелений', 'Бірюзовий', 'Блакитний', 'Синій', 'Індиго', 'Фіолетовий', 'Рожевий'],
+            $labels,
+        );
+    }
+
+    /**
+     * @return void
+     */
     public function testBluePresetUsesTailwindShades(): void
     {
-        $this->assertSame('Blue', StatusColor::BLUE->getLabel());
+        $this->assertSame('Синій', StatusColor::BLUE->getLabel());
         $this->assertSame('#EFF6FF', StatusColor::BLUE->lightBackground());
         $this->assertSame('#BFDBFE', StatusColor::BLUE->lightBorder());
         $this->assertSame('#1D4ED8', StatusColor::BLUE->lightText());

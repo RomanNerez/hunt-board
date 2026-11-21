@@ -27,4 +27,14 @@ final class SettingsCluster extends Cluster
      * @var int|null
      */
     protected static int|null $navigationSort = 100;
+
+    /**
+     * @var string|null
+     */
+    protected static string|null $navigationLabel = 'Налаштування';
+
+    /**
+     * @var string|null
+     */
+    protected static string|null $clusterBreadcrumb = 'Налаштування';
 }

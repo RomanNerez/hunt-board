@@ -28,7 +28,7 @@ final class StatusResourceTest extends FunctionalTestCase
 
         $this->get('/admin/settings/statuses')
             ->assertOk()
-            ->assertSeeInOrder(['fi-page-sub-navigation-sidebar', 'aria-current="page"', 'Statuses'], false);
+            ->assertSeeInOrder(['fi-page-sub-navigation-sidebar', 'aria-current="page"', 'Статуси'], false);
     }
 
     /**
@@ -68,8 +68,8 @@ final class StatusResourceTest extends FunctionalTestCase
 
         $labels = $this->navigationLabels(Filament::getNavigation());
 
-        $this->assertContains('Settings', $labels);
-        $this->assertNotContains('Statuses', $labels);
+        $this->assertContains('Налаштування', $labels);
+        $this->assertNotContains('Статуси', $labels);
     }
 
     /**
@@ -85,7 +85,7 @@ final class StatusResourceTest extends FunctionalTestCase
         $labels = $this->navigationLabels($page->getCachedSubNavigation());
 
         $this->assertSame(SubNavigationPosition::Start, $page::getSubNavigationPosition());
-        $this->assertSame(['Statuses'], $labels);
+        $this->assertSame(['Статуси'], $labels);
     }
 
     /**

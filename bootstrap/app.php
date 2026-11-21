@@ -13,7 +13,7 @@ use Illuminate\Http\Request;
 $basePath = dirname(__DIR__);
 $apiato = Apiato::configure(basePath: $basePath)->create();
 
-return Application::configure(basePath: $basePath)
+$app = Application::configure(basePath: $basePath)
     ->withProviders($apiato->providers())
     ->withEvents($apiato->events())
     ->withRouting(
@@ -40,3 +40,7 @@ return Application::configure(basePath: $basePath)
     ->withCommands($apiato->commands())
     ->withExceptions(static function (Exceptions $exceptions) {})
     ->create();
+
+$app->useLangPath($basePath . '/app/Ship/Languages');
+
+return $app;

@@ -26,6 +26,7 @@ final class StatusesTable
         return $table
             ->columns([
                 TextColumn::make('name')
+                    ->label('Назва')
                     ->formatStateUsing(static fn (Status $record): HtmlString => $record->color->renderBadge($record->name))
                     ->searchable()
                     ->sortable(),
@@ -45,6 +46,7 @@ final class StatusesTable
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
+                        ->modalHeading('Видалити вибрані статуси')
                         ->using(static function (Collection $records): void {
                             /** @var Status $record */
                             foreach ($records as $record) {
