@@ -98,6 +98,13 @@
         ],
         "fixer": [
             "php-cs-fixer fix"
+        ],
+        "ai:link": [
+            "mkdir -p .claude/skills && for d in .agents/skills/*/; do n=$(basename \"$d\"); [ -e \".claude/skills/$n\" ] || ln -s \"../../.agents/skills/$n\" \".claude/skills/$n\"; done; for l in .claude/skills/*; do [ -L \"$l\" ] && [ ! -e \"$l\" ] && rm \"$l\"; done; true"
+        ],
+        "ai:update": [
+            "@php artisan boost:update --no-discover",
+            "@ai:link"
         ]
     },
     "extra": {

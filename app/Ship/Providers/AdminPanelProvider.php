@@ -17,12 +17,21 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 final class AdminPanelProvider extends PanelProvider
 {
+    /**
+     * @param Panel $panel
+     *
+     * @return Panel
+     */
     public function panel(Panel $panel): Panel
     {
+        $this->discoverContainerComponents($panel);
+
         return $panel
             ->default()
             ->id('admin')
@@ -32,12 +41,9 @@ final class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Indigo,
             ])
-            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
-            ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
                 Dashboard::class,
             ])
-            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
                 AccountWidget::class,
                 FilamentInfoWidget::class,
@@ -56,5 +62,28 @@ final class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ]);
+    }
+
+    /**
+     * @param Panel $panel
+     *
+     * @return void
+     */
+    private function discoverContainerComponents(Panel $panel): void
+    {
+        $panel->discoverClusters(in: app_path('Ship/Filament/Clusters'), for: 'App\\Ship\\Filament\\Clusters');
+
+        /** @var list<string> $directories */
+        $directories = File::glob(app_path('Containers/*/*/UI/Filament'), GLOB_ONLYDIR);
+
+        foreach ($directories as $directory) {
+            $namespace = 'App\\' . str_replace('/', '\\', Str::after($directory, app_path() . '/'));
+
+            $panel
+                ->discoverClusters(in: $directory . '/Clusters', for: $namespace . '\\Clusters')
+                ->discoverResources(in: $directory . '/Resources', for: $namespace . '\\Resources')
+                ->discoverPages(in: $directory . '/Pages', for: $namespace . '\\Pages')
+                ->discoverWidgets(in: $directory . '/Widgets', for: $namespace . '\\Widgets');
+        }
     }
 }
