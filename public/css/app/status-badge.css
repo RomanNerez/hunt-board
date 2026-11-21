@@ -1,0 +1,20 @@
+.hb-status-badge {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    padding: 0.125rem 0.5rem;
+    border: 1px solid var(--hb-status-border);
+    border-radius: 0.375rem;
+    background-color: var(--hb-status-bg);
+    color: var(--hb-status-text);
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1rem;
+    white-space: nowrap;
+}
+
+.dark .hb-status-badge {
+    border-color: var(--hb-status-border-dark);
+    background-color: var(--hb-status-bg-dark);
+    color: var(--hb-status-text-dark);
+}

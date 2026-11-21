@@ -1,0 +1,6 @@
+{
+    "name": "apiato/status",
+    "description": "Status Container",
+    "type": "apiato-container",
+    "require": {}
+}

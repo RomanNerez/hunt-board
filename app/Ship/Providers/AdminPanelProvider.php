@@ -30,9 +30,7 @@ final class AdminPanelProvider extends PanelProvider
      */
     public function panel(Panel $panel): Panel
     {
-        $this->discoverContainerComponents($panel);
-
-        return $panel
+        $panel
             ->default()
             ->id('admin')
             ->path('admin')
@@ -62,6 +60,10 @@ final class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ]);
+
+        $this->discoverContainerComponents($panel);
+
+        return $panel;
     }
 
     /**

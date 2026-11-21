@@ -85,7 +85,7 @@ app/Containers/<Section>/<Container>/
 │   ├── Clusters/<Name>/<Name>Cluster.php   # only clusters used by this container alone
 │   ├── Resources/<Models>/          # plural folder, e.g. Users/
 │   │   ├── <Model>Resource.php
-│   │   ├── Pages/                   # List<Models>, Create<Model>, Edit<Model>, View<Model>
+│   │   ├── Pages/                   # List<Models>, Create<Model>, Edit<Model>, View<Model>; or Manage<Models> for a simple resource
 │   │   ├── Schemas/                 # <Model>Form.php, <Model>Infolist.php
 │   │   ├── Tables/                  # <Models>Table.php
 │   │   └── RelationManagers/
@@ -115,10 +115,13 @@ docker compose exec app php artisan make:filament-resource User \
   --panel=admin --no-interaction    # add --generate to scaffold fields from DB columns, --view for a view page
 ```
 
+**Pages or modals:** both are valid, and the choice depends on the task. A resource can have separate `Create<Model>` / `Edit<Model>` pages, or be a simple resource (`--simple`) that creates and edits in modals on one `Manage<Models>` page. Neither is the default. Pick per resource, record the choice in the change's `design.md`, and ask the user when the task doesn't make it clear.
+
 **Writes go through container Actions, not Filament's built-in Eloquent persistence.** That keeps business rules (transactions, events, hashing, notifications) in one place for panel, CLI and future UIs:
 
 - `Create<Model>` page: override `handleRecordCreation(array $data): Model` and return `app(Create<Model>Action::class)->run($data)`.
 - `Edit<Model>` page: override `handleRecordUpdate(Model $record, array $data): Model` and return `app(Update<Model>Action::class)->run($record->getKey(), $data)`.
+- Modal resource (`Manage<Models>` page, `ManageRecords`): route writes through `->using()`: `CreateAction::make()->using(fn (array $data) => app(Create<Model>Action::class)->run($data))` in the page's `getHeaderActions()`, and `EditAction::make()->using(fn (<Model> $record, array $data) => app(Update<Model>Action::class)->run($record->getKey(), $data))` in the table's `recordActions()`. To give `$data` the type `array<string, mixed>` for PHPStan, assign it to a new variable under an inline `/** @var array<string, mixed> $attributes */`. PHPStan ignores a PHPDoc on the closure, and `composer fixer` turns an `@var` placed right before `return` into a plain comment.
 - Delete, bulk delete and custom actions: `DeleteAction::make()->using(fn (<Model> $record) => app(Delete<Model>Action::class)->run($record->getKey()))`. Custom actions call an Action in `->action(...)`.
 - If the needed Action doesn't exist, create it in the container's `Actions/`, backed by Tasks. Don't put business logic in Filament classes.
 - Reads are fine through Eloquent in Filament (table query, filters, search, `getEloquentQuery()`). Don't route them through API-style list Actions that use request criteria and pagination (e.g. `ListUsersAction`).
