@@ -155,6 +155,105 @@ final class EditProfileLanguagesTest extends FunctionalTestCase
     /**
      * @return void
      */
+    public function testAddedDescriptionIsShownAfterReopening(): void
+    {
+        $this->seedLanguages();
+        $description = 'Вільне володіння для роботи з технічною документацією, спілкування з клієнтами та проведення нарад';
+
+        Livewire::test(EditProfileLanguages::class)
+            ->fillForm(['languages' => [
+                ['language' => 'Українська', 'level' => 'native'],
+                ['language' => 'Англійська', 'level' => 'b2', 'description' => $description],
+            ]])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        Livewire::test(EditProfileLanguages::class)
+            ->assertSchemaStateSet([
+                'languages.0.description' => null,
+                'languages.1.language' => 'Англійська',
+                'languages.1.description' => $description,
+            ]);
+    }
+
+    /**
+     * @return void
+     */
+    public function testStoresLanguageWithoutDescription(): void
+    {
+        Livewire::test(EditProfileLanguages::class)
+            ->fillForm(['languages' => [['language' => 'Українська', 'level' => 'native', 'description' => '']]])
+            ->call('save')
+            ->assertHasNoFormErrors()
+            ->assertNotified('Профіль збережено');
+
+        $this->assertSame(['Українська' => null], $this->storedDescriptions());
+    }
+
+    /**
+     * @return void
+     */
+    public function testReplacingDescriptionWithSpacesClearsIt(): void
+    {
+        $this->seedLanguages();
+        ProfileLanguage::query()->where('language', 'Англійська')->update(['description' => 'Технічна документація']);
+
+        Livewire::test(EditProfileLanguages::class)
+            ->assertSchemaStateSet(['languages.1.description' => 'Технічна документація'])
+            ->fillForm(['languages' => [
+                ['language' => 'Українська', 'level' => 'native'],
+                ['language' => 'Англійська', 'level' => 'b2', 'description' => '   '],
+            ]])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(['Українська' => null, 'Англійська' => null], $this->storedDescriptions());
+    }
+
+    /**
+     * @return void
+     */
+    public function testDescriptionMovesWithItsLanguage(): void
+    {
+        $this->seedLanguages();
+        ProfileLanguage::query()->where('language', 'Англійська')->update(['description' => 'Технічна документація']);
+
+        Livewire::test(EditProfileLanguages::class)
+            ->fillForm(['languages' => [
+                ['language' => 'Англійська', 'level' => 'b2', 'description' => 'Технічна документація'],
+                ['language' => 'Українська', 'level' => 'native', 'description' => null],
+            ]])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        Livewire::test(EditProfileLanguages::class)
+            ->assertSchemaStateSet([
+                'languages.0.language' => 'Англійська',
+                'languages.0.description' => 'Технічна документація',
+                'languages.1.language' => 'Українська',
+                'languages.1.description' => null,
+            ]);
+    }
+
+    /**
+     * @return void
+     */
+    public function testTooLongDescriptionKeepsStoredList(): void
+    {
+        $this->seedLanguages();
+
+        Livewire::test(EditProfileLanguages::class)
+            ->fillForm(['languages' => [['language' => 'Англійська', 'level' => 'b2', 'description' => str_repeat('а', 501)]]])
+            ->call('save')
+            ->assertHasFormErrors(['languages.0.description' => 'max'])
+            ->assertNotNotified('Профіль збережено');
+
+        $this->assertSame(['Українська' => null, 'Англійська' => null], $this->storedDescriptions());
+    }
+
+    /**
+     * @return void
+     */
     private function seedLanguages(): void
     {
         ProfileLanguage::factory()->createOne(['user_id' => $this->user->id, 'language' => 'Українська', 'level' => LanguageLevel::NATIVE, 'sort' => 0]);
@@ -172,6 +271,18 @@ final class EditProfileLanguagesTest extends FunctionalTestCase
             ->get()
             ->map(static fn (ProfileLanguage $language): array => [$language->language, $language->level])
             ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<string, string|null>
+     */
+    private function storedDescriptions(): array
+    {
+        return ProfileLanguage::query()
+            ->where('user_id', $this->user->id)
+            ->orderBy('sort')
+            ->pluck('description', 'language')
             ->all();
     }
 }

@@ -77,6 +77,7 @@ final class MigrationTest extends UnitTestCase
             'user_id' => 'int8',
             'language' => 'varchar',
             'level' => 'varchar',
+            'description' => 'varchar',
             'sort' => 'int2',
             'created_at' => 'timestamp',
             'updated_at' => 'timestamp',

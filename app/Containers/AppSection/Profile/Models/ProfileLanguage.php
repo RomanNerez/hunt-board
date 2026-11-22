@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $user_id
  * @property string $language
  * @property LanguageLevel $level
+ * @property string|null $description
  * @property int $sort
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
@@ -30,6 +31,7 @@ final class ProfileLanguage extends ParentModel
         'user_id',
         'language',
         'level',
+        'description',
         'sort',
     ];
 

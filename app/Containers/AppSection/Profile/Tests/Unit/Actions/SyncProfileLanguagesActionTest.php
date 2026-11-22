@@ -55,6 +55,36 @@ final class SyncProfileLanguagesActionTest extends UnitTestCase
     /**
      * @return void
      */
+    public function testStoresTrimmedDescription(): void
+    {
+        $user = User::factory()->createOne();
+
+        app(SyncProfileLanguagesAction::class)->run($user->id, [
+            ['language' => 'Англійська', 'level' => LanguageLevel::B2->value, 'description' => '  Технічна документація  '],
+        ]);
+
+        $this->assertSame(['Технічна документація'], $this->storedDescriptions($user->id));
+    }
+
+    /**
+     * @return void
+     */
+    public function testBlankOrMissingDescriptionIsStoredAsNull(): void
+    {
+        $user = User::factory()->createOne();
+
+        app(SyncProfileLanguagesAction::class)->run($user->id, [
+            ['language' => 'Англійська', 'level' => LanguageLevel::B2->value, 'description' => '   '],
+            ['language' => 'Польська', 'level' => LanguageLevel::A2->value, 'description' => ''],
+            ['language' => 'Українська', 'level' => LanguageLevel::NATIVE->value],
+        ]);
+
+        $this->assertSame([null, null, null], $this->storedDescriptions($user->id));
+    }
+
+    /**
+     * @return void
+     */
     public function testReplacesOnlyOwnLanguages(): void
     {
         $user = User::factory()->createOne();
@@ -99,6 +129,21 @@ final class SyncProfileLanguagesActionTest extends UnitTestCase
             ->orderBy('sort')
             ->get()
             ->map(static fn (ProfileLanguage $language): array => [$language->language, $language->level, $language->sort])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param int $userId
+     *
+     * @return list<string|null>
+     */
+    private function storedDescriptions(int $userId): array
+    {
+        return ProfileLanguage::query()
+            ->where('user_id', $userId)
+            ->orderBy('sort')
+            ->pluck('description')
             ->values()
             ->all();
     }

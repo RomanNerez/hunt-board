@@ -14,7 +14,7 @@ final class ReplaceProfileLanguagesTask extends ParentTask
     /**
      * @var list<string>
      */
-    private const ATTRIBUTES = ['language', 'level'];
+    private const ATTRIBUTES = ['language', 'level', 'description'];
 
     /**
      * @param ProfileLanguageRepository<ProfileLanguage> $repository
@@ -62,6 +62,9 @@ final class ReplaceProfileLanguagesTask extends ParentTask
         if (is_string($attributes['language'] ?? null)) {
             $attributes['language'] = trim($attributes['language']);
         }
+
+        $description = is_string($attributes['description'] ?? null) ? trim($attributes['description']) : '';
+        $attributes['description'] = '' === $description ? null : $description;
 
         return $attributes;
     }

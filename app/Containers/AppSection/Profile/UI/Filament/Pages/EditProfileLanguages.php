@@ -7,6 +7,7 @@ use App\Containers\AppSection\Profile\Enums\LanguageLevel;
 use App\Containers\AppSection\Profile\Models\ProfileLanguage;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 
@@ -45,6 +46,7 @@ final class EditProfileLanguages extends ProfileFormPage
                 ->map(static fn (ProfileLanguage $language): array => [
                     'language' => $language->language,
                     'level' => $language->level->value,
+                    'description' => $language->description,
                 ])
                 ->all(),
         ]);
@@ -77,6 +79,13 @@ final class EditProfileLanguages extends ProfileFormPage
                             ->label('Рівень')
                             ->options(LanguageLevel::class)
                             ->required(),
+                        Textarea::make('description')
+                            ->label('Опис')
+                            ->maxLength(500)
+                            ->rows(2)
+                            ->autosize()
+                            ->columnSpanFull()
+                            ->placeholder('Наприклад: вільне володіння для роботи з технічною документацією'),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
