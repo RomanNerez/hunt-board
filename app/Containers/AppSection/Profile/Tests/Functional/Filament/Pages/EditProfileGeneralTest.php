@@ -37,9 +37,9 @@ final class EditProfileGeneralTest extends FunctionalTestCase
     {
         Livewire::test(EditProfileGeneral::class)
             ->fillForm([
-                'first_name' => 'Роман',
-                'last_name' => 'Нерез',
-                'headline' => 'Senior FullStack Developer',
+                'first_name.uk' => 'Роман',
+                'last_name.uk' => 'Нерез',
+                'headline.uk' => 'Senior FullStack Developer',
             ])
             ->call('save')
             ->assertHasNoFormErrors()
@@ -47,10 +47,78 @@ final class EditProfileGeneralTest extends FunctionalTestCase
 
         $this->assertDatabaseHas(UserProfile::class, [
             'user_id' => $this->user->id,
-            'first_name' => 'Роман',
-            'last_name' => 'Нерез',
-            'headline' => 'Senior FullStack Developer',
+            'first_name->uk' => 'Роман',
+            'last_name->uk' => 'Нерез',
+            'headline->uk' => 'Senior FullStack Developer',
         ]);
+    }
+
+    /**
+     * @return void
+     */
+    public function testUkrainianIsActiveByDefault(): void
+    {
+        UserProfile::factory()->createOne([
+            'user_id' => $this->user->id,
+            'headline' => ['uk' => 'Senior PHP-розробник', 'en' => 'Senior PHP Developer'],
+        ]);
+
+        Livewire::test(EditProfileGeneral::class)
+            ->assertSet('dataLocale', 'uk')
+            ->assertSchemaStateSet(['headline.uk' => 'Senior PHP-розробник'])
+            ->assertSeeHtml("\$wire.dataLocale === 'uk'")
+            ->assertSeeHtml("\$wire.dataLocale === 'en'")
+            ->assertSeeHtml('English');
+    }
+
+    /**
+     * @return void
+     */
+    public function testHeaderSwitcherChangesDataLocale(): void
+    {
+        Livewire::test(EditProfileGeneral::class)
+            ->callAction('dataLocale_en')
+            ->assertSet('dataLocale', 'en')
+            ->callAction('dataLocale_uk')
+            ->assertSet('dataLocale', 'uk');
+    }
+
+    /**
+     * @return void
+     */
+    public function testSavesBothLanguagesWhileEnglishIsActive(): void
+    {
+        UserProfile::factory()->createOne(['user_id' => $this->user->id, 'headline' => ['uk' => 'Розробник', 'en' => 'Developer']]);
+
+        Livewire::test(EditProfileGeneral::class)
+            ->fillForm(['headline.uk' => 'Senior PHP-розробник'])
+            ->set('dataLocale', 'en')
+            ->fillForm(['headline.en' => 'Senior PHP Developer'])
+            ->assertSchemaStateSet(['headline.uk' => 'Senior PHP-розробник'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        Livewire::test(EditProfileGeneral::class)
+            ->assertSchemaStateSet([
+                'headline.uk' => 'Senior PHP-розробник',
+                'headline.en' => 'Senior PHP Developer',
+            ]);
+    }
+
+    /**
+     * @return void
+     */
+    public function testEnglishValuesAreOptional(): void
+    {
+        Livewire::test(EditProfileGeneral::class)
+            ->fillForm(['first_name.uk' => 'Роман', 'last_name.uk' => 'Нерез', 'first_name.en' => '', 'headline.uk' => 'Розробник'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $profile = UserProfile::query()->where('user_id', $this->user->id)->sole();
+
+        $this->assertSame(['uk' => 'Роман'], $profile->getTranslations('first_name'));
+        $this->assertSame(['uk' => 'Розробник'], $profile->getTranslations('headline'));
     }
 
     /**
@@ -66,7 +134,8 @@ final class EditProfileGeneralTest extends FunctionalTestCase
 
         Livewire::test(EditProfileGeneral::class)
             ->assertSchemaStateSet([
-                'location' => 'Київ, Україна',
+                'location.uk' => 'Київ, Україна',
+                'location.en' => null,
                 'email' => 'job@example.com',
             ]);
     }
@@ -77,7 +146,7 @@ final class EditProfileGeneralTest extends FunctionalTestCase
     public function testLoginEmailIsSuggestedWhileProfileIsMissing(): void
     {
         Livewire::test(EditProfileGeneral::class)
-            ->assertSchemaStateSet(['email' => 'roman@example.com', 'first_name' => null]);
+            ->assertSchemaStateSet(['email' => 'roman@example.com', 'first_name.uk' => null]);
     }
 
     /**
@@ -86,7 +155,7 @@ final class EditProfileGeneralTest extends FunctionalTestCase
     public function testContactEmailIsStoredSeparatelyFromLoginEmail(): void
     {
         Livewire::test(EditProfileGeneral::class)
-            ->fillForm(['first_name' => 'Роман', 'last_name' => 'Нерез', 'email' => 'job@example.com'])
+            ->fillForm(['first_name.uk' => 'Роман', 'last_name.uk' => 'Нерез', 'email' => 'job@example.com'])
             ->call('save')
             ->assertHasNoFormErrors();
 
@@ -100,7 +169,7 @@ final class EditProfileGeneralTest extends FunctionalTestCase
     public function testInternationalPhoneIsAccepted(): void
     {
         Livewire::test(EditProfileGeneral::class)
-            ->fillForm(['first_name' => 'Роман', 'last_name' => 'Нерез', 'phone' => '+380 (67) 123-45-67'])
+            ->fillForm(['first_name.uk' => 'Роман', 'last_name.uk' => 'Нерез', 'phone' => '+380 (67) 123-45-67'])
             ->call('save')
             ->assertHasNoFormErrors();
 
@@ -128,10 +197,12 @@ final class EditProfileGeneralTest extends FunctionalTestCase
     public static function invalidDataProvider(): array
     {
         return [
-            'empty first name' => [['first_name' => ''], 'first_name', 'required'],
+            'empty first name' => [['first_name.uk' => ''], 'first_name.uk', 'required'],
             'incomplete email' => [['email' => 'roman@'], 'email', 'email'],
             'letters in phone' => [['phone' => 'abc123'], 'phone', 'regex'],
-            'summary too long' => [['summary' => str_repeat('a', 5001)], 'summary', 'max'],
+            'summary too long' => [['summary.uk' => str_repeat('a', 5001)], 'summary.uk', 'max'],
+            'english summary too long' => [['summary.en' => str_repeat('a', 5001)], 'summary.en', 'max'],
+            'english first name too long' => [['first_name.en' => str_repeat('a', 101)], 'first_name.en', 'max'],
         ];
     }
 
@@ -145,15 +216,19 @@ final class EditProfileGeneralTest extends FunctionalTestCase
     #[DataProvider('invalidDataProvider')]
     public function testInvalidDataIsRejectedWithoutChangingProfile(array $override, string $field, string $rule): void
     {
-        $profile = UserProfile::factory()->createOne(['user_id' => $this->user->id, 'first_name' => 'Роман', 'last_name' => 'Нерез']);
+        $profile = UserProfile::factory()->createOne([
+            'user_id' => $this->user->id,
+            'first_name' => ['uk' => 'Роман', 'en' => 'Roman'],
+            'last_name' => 'Нерез',
+        ]);
 
         Livewire::test(EditProfileGeneral::class)
-            ->fillForm([...['first_name' => 'Олег', 'last_name' => 'Нерез'], ...$override])
+            ->fillForm([...['first_name.uk' => 'Олег', 'first_name.en' => 'Oleh'], ...$override])
             ->call('save')
             ->assertHasFormErrors([$field => $rule])
             ->assertNotNotified('Профіль збережено');
 
-        $this->assertSame('Роман', $profile->refresh()->first_name);
+        $this->assertEquals(['uk' => 'Роман', 'en' => 'Roman'], $profile->refresh()->getTranslations('first_name'));
     }
 
     /**
@@ -162,7 +237,7 @@ final class EditProfileGeneralTest extends FunctionalTestCase
     public function testEmptyFirstNameShowsUkrainianMessage(): void
     {
         $component = Livewire::test(EditProfileGeneral::class)
-            ->fillForm(['first_name' => '', 'last_name' => 'Нерез'])
+            ->fillForm(['first_name.uk' => '', 'last_name.uk' => 'Нерез'])
             ->call('save');
 
         /** @var MessageBag $errors */
@@ -174,12 +249,44 @@ final class EditProfileGeneralTest extends FunctionalTestCase
     /**
      * @return void
      */
+    public function testUkrainianErrorWhileEnglishIsActiveSwitchesToUkrainian(): void
+    {
+        UserProfile::factory()->createOne(['user_id' => $this->user->id, 'first_name' => 'Роман']);
+
+        $component = Livewire::test(EditProfileGeneral::class)
+            ->set('dataLocale', 'en')
+            ->fillForm(['first_name.uk' => ''])
+            ->call('save')
+            ->assertHasFormErrors(['first_name.uk' => 'required'])
+            ->assertSet('dataLocale', 'uk');
+
+        /** @var MessageBag $errors */
+        $errors = $component->errors();
+
+        $this->assertContains("Поле ім'я є обов’язковим.", $errors->all());
+    }
+
+    /**
+     * @return void
+     */
+    public function testEnglishErrorWhileUkrainianIsActiveSwitchesToEnglish(): void
+    {
+        Livewire::test(EditProfileGeneral::class)
+            ->fillForm(['first_name.uk' => 'Роман', 'last_name.uk' => 'Нерез', 'headline.en' => str_repeat('a', 256)])
+            ->call('save')
+            ->assertHasFormErrors(['headline.en' => 'max'])
+            ->assertSet('dataLocale', 'en');
+    }
+
+    /**
+     * @return void
+     */
     public function testEachUserSeesOwnProfile(): void
     {
         UserProfile::factory()->createOne(['first_name' => 'Роман']);
         UserProfile::factory()->createOne(['user_id' => $this->user->id, 'first_name' => 'Олена']);
 
         Livewire::test(EditProfileGeneral::class)
-            ->assertSchemaStateSet(['first_name' => 'Олена']);
+            ->assertSchemaStateSet(['first_name.uk' => 'Олена']);
     }
 }

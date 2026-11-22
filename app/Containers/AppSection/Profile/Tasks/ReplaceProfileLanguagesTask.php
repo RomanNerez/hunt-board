@@ -5,12 +5,15 @@ namespace App\Containers\AppSection\Profile\Tasks;
 use Apiato\Core\Repositories\Exceptions\ResourceCreationFailed;
 use App\Containers\AppSection\Profile\Data\Repositories\ProfileLanguageRepository;
 use App\Containers\AppSection\Profile\Models\ProfileLanguage;
+use App\Containers\AppSection\Profile\Tasks\Concerns\NormalizesTranslations;
 use App\Ship\Parents\Tasks\Task as ParentTask;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
 
 final class ReplaceProfileLanguagesTask extends ParentTask
 {
+    use NormalizesTranslations;
+
     /**
      * @var list<string>
      */
@@ -59,13 +62,6 @@ final class ReplaceProfileLanguagesTask extends ParentTask
         /** @var array<string, mixed> $attributes */
         $attributes = Arr::only($item, self::ATTRIBUTES);
 
-        if (is_string($attributes['language'] ?? null)) {
-            $attributes['language'] = trim($attributes['language']);
-        }
-
-        $description = is_string($attributes['description'] ?? null) ? trim($attributes['description']) : '';
-        $attributes['description'] = '' === $description ? null : $description;
-
-        return $attributes;
+        return $this->normalizeTranslations($attributes, (new ProfileLanguage())->translatable);
     }
 }

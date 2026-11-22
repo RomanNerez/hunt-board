@@ -68,4 +68,25 @@ final class SyncProfileEducationActionTest extends UnitTestCase
         $this->assertSame(['Новий курс'], ProfileEducation::query()->where('user_id', $user->id)->pluck('title')->all());
         $this->assertModelExists($foreign);
     }
+
+    /**
+     * @return void
+     */
+    public function testStoresBothLanguagesAndDropsBlankEnglish(): void
+    {
+        $user = User::factory()->createOne();
+
+        app(SyncProfileEducationAction::class)->run($user->id, [[
+            'type' => EducationType::UNIVERSITY->value,
+            'title' => ['uk' => " Бакалавр комп'ютерних наук ", 'en' => 'Bachelor of Computer Science'],
+            'institution' => ['uk' => 'КПІ ім. Ігоря Сікорського', 'en' => ''],
+            'description' => ['uk' => '', 'en' => '  '],
+        ]]);
+
+        $record = ProfileEducation::query()->where('user_id', $user->id)->sole();
+
+        $this->assertEquals(['uk' => "Бакалавр комп'ютерних наук", 'en' => 'Bachelor of Computer Science'], $record->getTranslations('title'));
+        $this->assertSame(['uk' => 'КПІ ім. Ігоря Сікорського'], $record->getTranslations('institution'));
+        $this->assertDatabaseHas(ProfileEducation::class, ['id' => $record->id, 'description' => null]);
+    }
 }

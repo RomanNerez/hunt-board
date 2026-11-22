@@ -9,6 +9,7 @@ use App\Containers\AppSection\Profile\Models\ProfileSkillGroup;
 use App\Containers\AppSection\Profile\Models\UserProfile;
 use App\Containers\AppSection\Profile\Tests\UnitTestCase;
 use App\Containers\AppSection\User\Models\User;
+use Illuminate\Support\Facades\App;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 #[CoversClass(UserProfile::class)]
@@ -55,5 +56,44 @@ final class UserProfileTest extends UnitTestCase
         }
 
         $this->assertModelExists($other);
+    }
+
+    /**
+     * @return void
+     */
+    public function testKeepsUkrainianAndEnglishValuesSeparately(): void
+    {
+        $profile = UserProfile::factory()->createOne([
+            'headline' => ['uk' => 'Senior PHP-розробник', 'en' => 'Senior PHP Developer'],
+        ]);
+
+        $this->assertEquals(
+            ['uk' => 'Senior PHP-розробник', 'en' => 'Senior PHP Developer'],
+            $profile->refresh()->getTranslations('headline'),
+        );
+        $this->assertSame('Senior PHP-розробник', $profile->headline);
+    }
+
+    /**
+     * @return void
+     */
+    public function testEnglishLocaleFallsBackToUkrainianValue(): void
+    {
+        $profile = UserProfile::factory()->createOne(['headline' => ['uk' => 'Senior PHP-розробник']]);
+
+        App::setLocale('en');
+
+        $this->assertSame('Senior PHP-розробник', $profile->refresh()->headline);
+    }
+
+    /**
+     * @return void
+     */
+    public function testEmptyOptionalFieldIsStoredAsNull(): void
+    {
+        $profile = UserProfile::factory()->createOne(['headline' => null]);
+
+        $this->assertDatabaseHas(UserProfile::class, ['id' => $profile->id, 'headline' => null]);
+        $this->assertNull($profile->refresh()->headline);
     }
 }

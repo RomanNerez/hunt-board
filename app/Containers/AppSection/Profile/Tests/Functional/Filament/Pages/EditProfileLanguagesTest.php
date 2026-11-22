@@ -9,6 +9,7 @@ use App\Containers\AppSection\Profile\UI\Filament\Pages\EditProfileLanguages;
 use App\Containers\AppSection\User\Models\User;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\CoversClass;
 
@@ -54,8 +55,8 @@ final class EditProfileLanguagesTest extends FunctionalTestCase
     {
         Livewire::test(EditProfileLanguages::class)
             ->fillForm(['languages' => [
-                ['language' => 'Українська', 'level' => 'native'],
-                ['language' => 'Англійська', 'level' => 'b2'],
+                ['language' => ['uk' => 'Українська'], 'level' => 'native'],
+                ['language' => ['uk' => 'Англійська'], 'level' => 'b2'],
             ]])
             ->call('save')
             ->assertHasNoFormErrors()
@@ -74,8 +75,8 @@ final class EditProfileLanguagesTest extends FunctionalTestCase
         Livewire::test(EditProfileLanguages::class)
             ->assertSchemaStateSet(['languages.1.level' => LanguageLevel::B2])
             ->fillForm(['languages' => [
-                ['language' => 'Українська', 'level' => 'native'],
-                ['language' => 'Англійська', 'level' => 'c1'],
+                ['language' => ['uk' => 'Українська'], 'level' => 'native'],
+                ['language' => ['uk' => 'Англійська'], 'level' => 'c1'],
             ]])
             ->call('save')
             ->assertHasNoFormErrors();
@@ -91,7 +92,7 @@ final class EditProfileLanguagesTest extends FunctionalTestCase
         $this->seedLanguages();
 
         Livewire::test(EditProfileLanguages::class)
-            ->fillForm(['languages' => [['language' => 'Українська', 'level' => 'native']]])
+            ->fillForm(['languages' => [['language' => ['uk' => 'Українська'], 'level' => 'native']]])
             ->call('save')
             ->assertHasNoFormErrors();
 
@@ -104,7 +105,7 @@ final class EditProfileLanguagesTest extends FunctionalTestCase
     public function testLevelOffersSevenOptionsInOrder(): void
     {
         Livewire::test(EditProfileLanguages::class)
-            ->fillForm(['languages' => [['language' => 'Польська']]])
+            ->fillForm(['languages' => [['language' => ['uk' => 'Польська']]]])
             ->assertFormFieldExists('languages.0.level', static fn (Select $field): bool => [
                 'A1 Beginner',
                 'A2 Elementary',
@@ -124,7 +125,7 @@ final class EditProfileLanguagesTest extends FunctionalTestCase
         $this->seedLanguages();
 
         Livewire::test(EditProfileLanguages::class)
-            ->fillForm(['languages' => [['language' => 'Польська', 'level' => null]]])
+            ->fillForm(['languages' => [['language' => ['uk' => 'Польська'], 'level' => null]]])
             ->call('save')
             ->assertHasFormErrors(['languages.0.level' => 'required'])
             ->assertNotNotified('Профіль збережено');
@@ -141,11 +142,11 @@ final class EditProfileLanguagesTest extends FunctionalTestCase
 
         $component = Livewire::test(EditProfileLanguages::class)
             ->fillForm(['languages' => [
-                ['language' => 'Англійська', 'level' => 'b2'],
-                ['language' => ' англійська ', 'level' => 'c1'],
+                ['language' => ['uk' => 'Англійська'], 'level' => 'b2'],
+                ['language' => ['uk' => ' англійська '], 'level' => 'c1'],
             ]])
             ->call('save')
-            ->assertHasFormErrors(['languages.1.language'])
+            ->assertHasFormErrors(['languages.1.language.uk'])
             ->assertNotNotified('Профіль збережено');
 
         $this->assertContains('Ця мова вже є в списку.', $component->errors()->all());
@@ -162,17 +163,17 @@ final class EditProfileLanguagesTest extends FunctionalTestCase
 
         Livewire::test(EditProfileLanguages::class)
             ->fillForm(['languages' => [
-                ['language' => 'Українська', 'level' => 'native'],
-                ['language' => 'Англійська', 'level' => 'b2', 'description' => $description],
+                ['language' => ['uk' => 'Українська'], 'level' => 'native'],
+                ['language' => ['uk' => 'Англійська'], 'level' => 'b2', 'description' => ['uk' => $description]],
             ]])
             ->call('save')
             ->assertHasNoFormErrors();
 
         Livewire::test(EditProfileLanguages::class)
             ->assertSchemaStateSet([
-                'languages.0.description' => null,
-                'languages.1.language' => 'Англійська',
-                'languages.1.description' => $description,
+                'languages.0.description.uk' => null,
+                'languages.1.language.uk' => 'Англійська',
+                'languages.1.description.uk' => $description,
             ]);
     }
 
@@ -182,7 +183,7 @@ final class EditProfileLanguagesTest extends FunctionalTestCase
     public function testStoresLanguageWithoutDescription(): void
     {
         Livewire::test(EditProfileLanguages::class)
-            ->fillForm(['languages' => [['language' => 'Українська', 'level' => 'native', 'description' => '']]])
+            ->fillForm(['languages' => [['language' => ['uk' => 'Українська'], 'level' => 'native', 'description' => ['uk' => '']]]])
             ->call('save')
             ->assertHasNoFormErrors()
             ->assertNotified('Профіль збережено');
@@ -196,13 +197,13 @@ final class EditProfileLanguagesTest extends FunctionalTestCase
     public function testReplacingDescriptionWithSpacesClearsIt(): void
     {
         $this->seedLanguages();
-        ProfileLanguage::query()->where('language', 'Англійська')->update(['description' => 'Технічна документація']);
+        ProfileLanguage::query()->where('language->uk', 'Англійська')->sole()->update(['description' => 'Технічна документація']);
 
         Livewire::test(EditProfileLanguages::class)
-            ->assertSchemaStateSet(['languages.1.description' => 'Технічна документація'])
+            ->assertSchemaStateSet(['languages.1.description.uk' => 'Технічна документація'])
             ->fillForm(['languages' => [
-                ['language' => 'Українська', 'level' => 'native'],
-                ['language' => 'Англійська', 'level' => 'b2', 'description' => '   '],
+                ['language' => ['uk' => 'Українська'], 'level' => 'native'],
+                ['language' => ['uk' => 'Англійська'], 'level' => 'b2', 'description' => ['uk' => '   ']],
             ]])
             ->call('save')
             ->assertHasNoFormErrors();
@@ -216,22 +217,22 @@ final class EditProfileLanguagesTest extends FunctionalTestCase
     public function testDescriptionMovesWithItsLanguage(): void
     {
         $this->seedLanguages();
-        ProfileLanguage::query()->where('language', 'Англійська')->update(['description' => 'Технічна документація']);
+        ProfileLanguage::query()->where('language->uk', 'Англійська')->sole()->update(['description' => 'Технічна документація']);
 
         Livewire::test(EditProfileLanguages::class)
             ->fillForm(['languages' => [
-                ['language' => 'Англійська', 'level' => 'b2', 'description' => 'Технічна документація'],
-                ['language' => 'Українська', 'level' => 'native', 'description' => null],
+                ['language' => ['uk' => 'Англійська'], 'level' => 'b2', 'description' => ['uk' => 'Технічна документація']],
+                ['language' => ['uk' => 'Українська'], 'level' => 'native', 'description' => ['uk' => null]],
             ]])
             ->call('save')
             ->assertHasNoFormErrors();
 
         Livewire::test(EditProfileLanguages::class)
             ->assertSchemaStateSet([
-                'languages.0.language' => 'Англійська',
-                'languages.0.description' => 'Технічна документація',
-                'languages.1.language' => 'Українська',
-                'languages.1.description' => null,
+                'languages.0.language.uk' => 'Англійська',
+                'languages.0.description.uk' => 'Технічна документація',
+                'languages.1.language.uk' => 'Українська',
+                'languages.1.description.uk' => null,
             ]);
     }
 
@@ -243,12 +244,68 @@ final class EditProfileLanguagesTest extends FunctionalTestCase
         $this->seedLanguages();
 
         Livewire::test(EditProfileLanguages::class)
-            ->fillForm(['languages' => [['language' => 'Англійська', 'level' => 'b2', 'description' => str_repeat('а', 501)]]])
+            ->fillForm(['languages' => [['language' => ['uk' => 'Англійська'], 'level' => 'b2', 'description' => ['uk' => str_repeat('а', 501)]]]])
             ->call('save')
-            ->assertHasFormErrors(['languages.0.description' => 'max'])
+            ->assertHasFormErrors(['languages.0.description.uk' => 'max'])
             ->assertNotNotified('Профіль збережено');
 
         $this->assertSame(['Українська' => null, 'Англійська' => null], $this->storedDescriptions());
+    }
+
+    /**
+     * @return void
+     */
+    public function testStoresLanguageAndDescriptionInBothLanguages(): void
+    {
+        Livewire::test(EditProfileLanguages::class)
+            ->fillForm(['languages' => [[
+                'language' => ['uk' => 'Англійська', 'en' => 'English'],
+                'level' => 'b2',
+                'description' => ['uk' => 'Технічна документація', 'en' => 'Technical documentation'],
+            ]]])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        Livewire::test(EditProfileLanguages::class)
+            ->set('dataLocale', 'en')
+            ->assertSchemaStateSet([
+                'languages.0.language.uk' => 'Англійська',
+                'languages.0.language.en' => 'English',
+                'languages.0.description.en' => 'Technical documentation',
+            ]);
+    }
+
+    /**
+     * @return void
+     */
+    public function testRepeatedEnglishNameIgnoringCaseIsRejectedAndShown(): void
+    {
+        $this->seedLanguages();
+
+        $component = Livewire::test(EditProfileLanguages::class)
+            ->fillForm(['languages' => [
+                ['language' => ['uk' => 'Англійська', 'en' => 'English'], 'level' => 'b2'],
+                ['language' => ['uk' => 'Англійська мова', 'en' => 'english'], 'level' => 'c1'],
+            ]])
+            ->call('save')
+            ->assertHasFormErrors(['languages.1.language.en'])
+            ->assertHasNoFormErrors(['languages.1.language.uk'])
+            ->assertSet('dataLocale', 'en')
+            ->assertNotNotified('Профіль збережено');
+
+        $this->assertContains('Ця мова вже є в списку.', $component->errors()->all());
+        $this->assertSame([['Українська', LanguageLevel::NATIVE], ['Англійська', LanguageLevel::B2]], $this->storedLanguages());
+    }
+
+    /**
+     * @return void
+     */
+    public function testEnglishFieldSuggestsEnglishLanguageNames(): void
+    {
+        Livewire::test(EditProfileLanguages::class)
+            ->fillForm(['languages' => [['level' => 'b2']]])
+            ->assertFormFieldExists('languages.0.language.en', static fn (TextInput $field): bool => ['Ukrainian', 'English', 'Polish', 'German', 'Spanish', 'French'] === $field->getDatalistOptions())
+            ->assertFormFieldExists('languages.0.language.uk', static fn (TextInput $field): bool => 'Англійська' === ($field->getDatalistOptions()[1] ?? null));
     }
 
     /**
@@ -282,7 +339,8 @@ final class EditProfileLanguagesTest extends FunctionalTestCase
         return ProfileLanguage::query()
             ->where('user_id', $this->user->id)
             ->orderBy('sort')
-            ->pluck('description', 'language')
+            ->get()
+            ->mapWithKeys(static fn (ProfileLanguage $language): array => [$language->language => $language->description])
             ->all();
     }
 }

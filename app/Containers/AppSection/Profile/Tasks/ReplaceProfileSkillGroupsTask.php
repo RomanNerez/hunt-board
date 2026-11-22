@@ -5,11 +5,14 @@ namespace App\Containers\AppSection\Profile\Tasks;
 use Apiato\Core\Repositories\Exceptions\ResourceCreationFailed;
 use App\Containers\AppSection\Profile\Data\Repositories\ProfileSkillGroupRepository;
 use App\Containers\AppSection\Profile\Models\ProfileSkillGroup;
+use App\Containers\AppSection\Profile\Tasks\Concerns\NormalizesTranslations;
 use App\Ship\Parents\Tasks\Task as ParentTask;
 use Illuminate\Database\Eloquent\Collection;
 
 final class ReplaceProfileSkillGroupsTask extends ParentTask
 {
+    use NormalizesTranslations;
+
     /**
      * @param ProfileSkillGroupRepository<ProfileSkillGroup> $repository
      */
@@ -35,7 +38,7 @@ final class ReplaceProfileSkillGroupsTask extends ParentTask
         foreach ($items as $sort => $item) {
             $records->push($this->repository->create([
                 'user_id' => $userId,
-                'name' => $item['name'] ?? null,
+                'name' => $this->normalizeTranslation($item['name'] ?? null),
                 'skills' => $this->normalizeSkills($item['skills'] ?? []),
                 'sort' => $sort,
             ]));

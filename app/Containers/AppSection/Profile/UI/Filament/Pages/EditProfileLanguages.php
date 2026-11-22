@@ -4,6 +4,7 @@ namespace App\Containers\AppSection\Profile\UI\Filament\Pages;
 
 use App\Containers\AppSection\Profile\Actions\SyncProfileLanguagesAction;
 use App\Containers\AppSection\Profile\Enums\LanguageLevel;
+use App\Containers\AppSection\Profile\Enums\ProfileLocale;
 use App\Containers\AppSection\Profile\Models\ProfileLanguage;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -44,9 +45,9 @@ final class EditProfileLanguages extends ProfileFormPage
                 ->orderBy('sort')
                 ->get()
                 ->map(static fn (ProfileLanguage $language): array => [
-                    'language' => $language->language,
+                    'language' => self::localeValues($language->getTranslations('language')),
                     'level' => $language->level->value,
-                    'description' => $language->description,
+                    'description' => self::localeValues($language->getTranslations('description')),
                 ])
                 ->all(),
         ]);
@@ -65,27 +66,26 @@ final class EditProfileLanguages extends ProfileFormPage
                 Repeater::make('languages')
                     ->hiddenLabel()
                     ->schema([
-                        TextInput::make('language')
+                        ...$this->translatable('language', fn (string $name, ProfileLocale $locale): TextInput => TextInput::make($name)
                             ->label('Мова')
-                            ->required()
                             ->maxLength(100)
-                            ->datalist(['Українська', 'Англійська', 'Польська', 'Німецька', 'Іспанська', 'Французька'])
-                            ->rule(fn (): \Closure => function (string $attribute, mixed $value, \Closure $fail): void {
-                                if ($this->isRepeatedLanguage($value)) {
+                            ->datalist(self::languageSuggestions($locale))
+                            ->rule(fn (): \Closure => function (string $attribute, mixed $value, \Closure $fail) use ($locale): void {
+                                if ($this->isRepeatedLanguage($value, $locale)) {
                                     $fail('Ця мова вже є в списку.');
                                 }
-                            }),
+                            }), required: true),
                         Select::make('level')
                             ->label('Рівень')
                             ->options(LanguageLevel::class)
                             ->required(),
-                        Textarea::make('description')
+                        ...$this->translatable('description', static fn (string $name): Textarea => Textarea::make($name)
                             ->label('Опис')
                             ->maxLength(500)
                             ->rows(2)
                             ->autosize()
                             ->columnSpanFull()
-                            ->placeholder('Наприклад: вільне володіння для роботи з технічною документацією'),
+                            ->placeholder('Наприклад: вільне володіння для роботи з технічною документацією')),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -109,20 +109,36 @@ final class EditProfileLanguages extends ProfileFormPage
     }
 
     /**
+     * @param ProfileLocale $locale
+     *
+     * @return list<string>
+     */
+    private static function languageSuggestions(ProfileLocale $locale): array
+    {
+        return match ($locale) {
+            ProfileLocale::Ukrainian => ['Українська', 'Англійська', 'Польська', 'Німецька', 'Іспанська', 'Французька'],
+            ProfileLocale::English => ['Ukrainian', 'English', 'Polish', 'German', 'Spanish', 'French'],
+        };
+    }
+
+    /**
      * @param mixed $value
+     * @param ProfileLocale $locale
      *
      * @return bool
      */
-    private function isRepeatedLanguage(mixed $value): bool
+    private function isRepeatedLanguage(mixed $value, ProfileLocale $locale): bool
     {
-        if (!is_string($value)) {
+        if (!is_string($value) || '' === trim($value)) {
             return false;
         }
 
         $occurrences = 0;
 
         foreach ($this->repeaterItems($this->data ?? [], 'languages') as $item) {
-            if (is_string($item['language'] ?? null) && $this->normalizeLanguage($item['language']) === $this->normalizeLanguage($value)) {
+            $language = is_array($item['language'] ?? null) ? ($item['language'][$locale->value] ?? null) : null;
+
+            if (is_string($language) && $this->normalizeLanguage($language) === $this->normalizeLanguage($value)) {
                 ++$occurrences;
             }
         }

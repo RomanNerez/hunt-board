@@ -11,7 +11,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('profile_languages', static function (Blueprint $table): void {
-            $table->string('description', 500)->nullable()->after('level');
+            $table->jsonb('description')->nullable()->after('level');
         });
     }
 

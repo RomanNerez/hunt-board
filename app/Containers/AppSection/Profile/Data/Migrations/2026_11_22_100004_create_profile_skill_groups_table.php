@@ -13,7 +13,7 @@ return new class extends Migration {
         Schema::create('profile_skill_groups', static function (Blueprint $table): void {
             $table->id();
             $table->foreignId('user_id')->index()->constrained()->cascadeOnDelete();
-            $table->string('name', 100);
+            $table->jsonb('name');
             $table->json('skills');
             $table->unsignedSmallInteger('sort');
             $table->timestamps();

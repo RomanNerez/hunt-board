@@ -14,12 +14,12 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('user_id')->index()->constrained()->cascadeOnDelete();
             $table->string('type', 20);
-            $table->string('title');
-            $table->string('institution')->nullable();
+            $table->jsonb('title');
+            $table->jsonb('institution')->nullable();
             $table->date('started_on')->nullable();
             $table->date('finished_on')->nullable();
             $table->string('url', 2048)->nullable();
-            $table->text('description')->nullable();
+            $table->jsonb('description')->nullable();
             $table->unsignedSmallInteger('sort');
             $table->timestamps();
         });

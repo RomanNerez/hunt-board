@@ -13,7 +13,7 @@ return new class extends Migration {
         Schema::create('profile_languages', static function (Blueprint $table): void {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('language', 100);
+            $table->jsonb('language');
             $table->string('level', 20);
             $table->unsignedSmallInteger('sort');
             $table->timestamps();

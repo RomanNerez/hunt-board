@@ -86,6 +86,23 @@ final class SyncProfileSkillGroupsActionTest extends UnitTestCase
     }
 
     /**
+     * @return void
+     */
+    public function testStoresGroupNameInBothLanguages(): void
+    {
+        $user = User::factory()->createOne();
+
+        app(SyncProfileSkillGroupsAction::class)->run($user->id, [
+            ['name' => ['uk' => ' Інструменти ', 'en' => 'Tools'], 'skills' => ['Docker']],
+        ]);
+
+        $group = ProfileSkillGroup::query()->where('user_id', $user->id)->sole();
+
+        $this->assertEquals(['uk' => 'Інструменти', 'en' => 'Tools'], $group->getTranslations('name'));
+        $this->assertSame(['Docker'], $group->skills);
+    }
+
+    /**
      * @param int $userId
      *
      * @return array<int, array{string, list<string>, int}>

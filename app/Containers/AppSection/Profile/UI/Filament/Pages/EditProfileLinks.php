@@ -40,7 +40,10 @@ final class EditProfileLinks extends ProfileFormPage
                 ->where('user_id', $this->userId())
                 ->orderBy('sort')
                 ->get()
-                ->map(static fn (ProfileLink $link): array => $link->only(['label', 'url']))
+                ->map(static fn (ProfileLink $link): array => [
+                    'label' => self::localeValues($link->getTranslations('label')),
+                    'url' => self::localeValues($link->getTranslations('url')),
+                ])
                 ->all(),
         ]);
     }
@@ -58,23 +61,21 @@ final class EditProfileLinks extends ProfileFormPage
                 Repeater::make('links')
                     ->hiddenLabel()
                     ->schema([
-                        TextInput::make('label')
+                        ...$this->translatable('label', static fn (string $name): TextInput => TextInput::make($name)
                             ->label('Назва')
-                            ->required()
                             ->maxLength(100)
-                            ->datalist(['LinkedIn', 'GitHub', 'Portfolio', 'Telegram']),
-                        TextInput::make('url')
+                            ->datalist(['LinkedIn', 'GitHub', 'Portfolio', 'Telegram']), required: true),
+                        ...$this->translatable('url', static fn (string $name): TextInput => TextInput::make($name)
                             ->label('URL')
-                            ->required()
                             ->url()
                             ->rule('url:http,https')
-                            ->maxLength(2048),
+                            ->maxLength(2048), required: true),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
                     ->reorderableWithDragAndDrop()
                     ->addActionLabel('Додати посилання')
-                    ->itemLabel(static fn (array $state): string|null => is_string($state['label'] ?? null) ? $state['label'] : null),
+                    ->itemLabel(fn (array $state): string|null => self::translationWithFallback($state['label'] ?? null, $this->activeDataLocale())),
             ]);
     }
 

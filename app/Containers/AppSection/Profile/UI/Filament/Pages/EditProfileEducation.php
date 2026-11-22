@@ -4,6 +4,7 @@ namespace App\Containers\AppSection\Profile\UI\Filament\Pages;
 
 use App\Containers\AppSection\Profile\Actions\SyncProfileEducationAction;
 use App\Containers\AppSection\Profile\Enums\EducationType;
+use App\Containers\AppSection\Profile\Enums\ProfileLocale;
 use App\Containers\AppSection\Profile\Models\ProfileEducation;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
@@ -46,12 +47,12 @@ final class EditProfileEducation extends ProfileFormPage
                 ->get()
                 ->map(static fn (ProfileEducation $education): array => [
                     'type' => $education->type->value,
-                    'title' => $education->title,
-                    'institution' => $education->institution,
+                    'title' => self::localeValues($education->getTranslations('title')),
+                    'institution' => self::localeValues($education->getTranslations('institution')),
                     'started_on' => $education->started_on?->toDateString(),
                     'finished_on' => $education->finished_on?->toDateString(),
                     'url' => $education->url,
-                    'description' => $education->description,
+                    'description' => self::localeValues($education->getTranslations('description')),
                 ])
                 ->all(),
         ]);
@@ -74,13 +75,12 @@ final class EditProfileEducation extends ProfileFormPage
                             ->label('Тип')
                             ->options(EducationType::class)
                             ->required(),
-                        TextInput::make('title')
+                        ...$this->translatable('title', static fn (string $name): TextInput => TextInput::make($name)
                             ->label('Назва')
-                            ->required()
-                            ->maxLength(255),
-                        TextInput::make('institution')
+                            ->maxLength(255), required: true),
+                        ...$this->translatable('institution', static fn (string $name): TextInput => TextInput::make($name)
                             ->label('Заклад / організація')
-                            ->maxLength(255),
+                            ->maxLength(255)),
                         TextInput::make('url')
                             ->label('Посилання')
                             ->url()
@@ -95,17 +95,17 @@ final class EditProfileEducation extends ProfileFormPage
                             ->native(false)
                             ->displayFormat('d.m.Y')
                             ->afterOrEqual('started_on'),
-                        Textarea::make('description')
+                        ...$this->translatable('description', static fn (string $name): Textarea => Textarea::make($name)
                             ->label('Опис')
                             ->maxLength(2000)
-                            ->columnSpanFull(),
+                            ->columnSpanFull()),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
                     ->collapsible()
                     ->reorderableWithDragAndDrop()
                     ->addActionLabel('Додати запис')
-                    ->itemLabel(static fn (array $state): string|null => self::itemLabel($state)),
+                    ->itemLabel(fn (array $state): string|null => self::itemLabel($state, $this->activeDataLocale())),
             ]);
     }
 
@@ -125,14 +125,15 @@ final class EditProfileEducation extends ProfileFormPage
 
     /**
      * @param array<array-key, mixed> $state
+     * @param ProfileLocale $locale
      *
      * @return string|null
      */
-    private static function itemLabel(array $state): string|null
+    private static function itemLabel(array $state, ProfileLocale $locale): string|null
     {
         $type = $state['type'] ?? null;
         $type = $type instanceof EducationType ? $type : EducationType::tryFrom(is_string($type) ? $type : '');
-        $title = is_string($state['title'] ?? null) ? $state['title'] : '';
+        $title = self::translationWithFallback($state['title'] ?? null, $locale);
 
         $parts = array_filter([$type?->getLabel(), $title], static fn (string|null $part): bool => null !== $part && '' !== $part);
 

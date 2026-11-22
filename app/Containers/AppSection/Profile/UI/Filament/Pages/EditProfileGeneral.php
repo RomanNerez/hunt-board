@@ -38,15 +38,19 @@ final class EditProfileGeneral extends ProfileFormPage
     {
         $profile = UserProfile::query()->where('user_id', $this->userId())->first();
 
-        $this->form->fill($profile?->only([
-            'first_name',
-            'last_name',
-            'email',
-            'phone',
-            'location',
-            'headline',
-            'summary',
-        ]) ?? ['email' => Auth::user()?->getAttribute('email')]);
+        if (null === $profile) {
+            $this->form->fill(['email' => Auth::user()?->getAttribute('email')]);
+
+            return;
+        }
+
+        $this->form->fill([
+            ...$profile->only(['email', 'phone']),
+            ...array_map(
+                static fn (string $field): array => self::localeValues($profile->getTranslations($field)),
+                array_combine($profile->translatable, $profile->translatable),
+            ),
+        ]);
     }
 
     /**
@@ -60,14 +64,12 @@ final class EditProfileGeneral extends ProfileFormPage
             ->statePath('data')
             ->columns(2)
             ->components([
-                TextInput::make('first_name')
+                ...$this->translatable('first_name', static fn (string $name): TextInput => TextInput::make($name)
                     ->label("Ім'я")
-                    ->required()
-                    ->maxLength(100),
-                TextInput::make('last_name')
+                    ->maxLength(100), required: true),
+                ...$this->translatable('last_name', static fn (string $name): TextInput => TextInput::make($name)
                     ->label('Прізвище')
-                    ->required()
-                    ->maxLength(100),
+                    ->maxLength(100), required: true),
                 TextInput::make('email')
                     ->label('Email')
                     ->email()
@@ -77,18 +79,18 @@ final class EditProfileGeneral extends ProfileFormPage
                     ->tel()
                     ->telRegex('/^\+?[0-9\s\-()]{7,32}$/')
                     ->maxLength(32),
-                TextInput::make('location')
+                ...$this->translatable('location', static fn (string $name): TextInput => TextInput::make($name)
                     ->label('Локація')
-                    ->maxLength(255),
-                TextInput::make('headline')
+                    ->maxLength(255)),
+                ...$this->translatable('headline', static fn (string $name): TextInput => TextInput::make($name)
                     ->label('Заголовок')
                     ->placeholder('Senior FullStack Developer')
-                    ->maxLength(255),
-                Textarea::make('summary')
+                    ->maxLength(255)),
+                ...$this->translatable('summary', static fn (string $name): Textarea => Textarea::make($name)
                     ->label('Про себе')
                     ->rows(8)
                     ->maxLength(5000)
-                    ->columnSpanFull(),
+                    ->columnSpanFull()),
             ]);
     }
 

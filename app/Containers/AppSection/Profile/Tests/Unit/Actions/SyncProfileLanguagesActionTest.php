@@ -118,6 +118,30 @@ final class SyncProfileLanguagesActionTest extends UnitTestCase
     }
 
     /**
+     * @return void
+     */
+    public function testStoresLanguageAndDescriptionInBothLanguages(): void
+    {
+        $user = User::factory()->createOne();
+
+        app(SyncProfileLanguagesAction::class)->run($user->id, [
+            [
+                'language' => ['uk' => 'Англійська', 'en' => ' English '],
+                'level' => LanguageLevel::B2->value,
+                'description' => ['uk' => 'Технічна документація', 'en' => ''],
+            ],
+            ['language' => ['uk' => 'Польська', 'en' => ''], 'level' => LanguageLevel::A2->value, 'description' => ['uk' => ' ', 'en' => '']],
+        ]);
+
+        $languages = ProfileLanguage::query()->where('user_id', $user->id)->orderBy('sort')->get();
+
+        $this->assertEquals(['uk' => 'Англійська', 'en' => 'English'], $languages[0]->getTranslations('language'));
+        $this->assertSame(['uk' => 'Технічна документація'], $languages[0]->getTranslations('description'));
+        $this->assertSame(['uk' => 'Польська'], $languages[1]->getTranslations('language'));
+        $this->assertDatabaseHas(ProfileLanguage::class, ['id' => $languages[1]->id, 'description' => null]);
+    }
+
+    /**
      * @param int $userId
      *
      * @return array<int, array{string, LanguageLevel, int}>

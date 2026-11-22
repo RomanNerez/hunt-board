@@ -3,6 +3,7 @@
 namespace App\Containers\AppSection\Profile\UI\Filament\Pages;
 
 use App\Containers\AppSection\Profile\Actions\SyncProfileSkillGroupsAction;
+use App\Containers\AppSection\Profile\Enums\ProfileLocale;
 use App\Containers\AppSection\Profile\Models\ProfileSkillGroup;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TagsInput;
@@ -41,7 +42,10 @@ final class EditProfileSkills extends ProfileFormPage
                 ->where('user_id', $this->userId())
                 ->orderBy('sort')
                 ->get()
-                ->map(static fn (ProfileSkillGroup $group): array => $group->only(['name', 'skills']))
+                ->map(static fn (ProfileSkillGroup $group): array => [
+                    'name' => self::localeValues($group->getTranslations('name')),
+                    'skills' => $group->skills,
+                ])
                 ->all(),
         ]);
     }
@@ -59,11 +63,13 @@ final class EditProfileSkills extends ProfileFormPage
                 Repeater::make('groups')
                     ->hiddenLabel()
                     ->schema([
-                        TextInput::make('name')
+                        ...$this->translatable('name', static fn (string $name, ProfileLocale $locale): TextInput => TextInput::make($name)
                             ->label('Назва групи')
-                            ->required()
                             ->maxLength(100)
-                            ->datalist(['Backend', 'Frontend', 'Бази даних', 'DevOps', 'Інструменти']),
+                            ->datalist(match ($locale) {
+                                ProfileLocale::Ukrainian => ['Backend', 'Frontend', 'Бази даних', 'DevOps', 'Інструменти'],
+                                ProfileLocale::English => ['Backend', 'Frontend', 'Databases', 'DevOps', 'Tools'],
+                            }), required: true),
                         TagsInput::make('skills')
                             ->label('Технології')
                             ->required()
@@ -75,7 +81,7 @@ final class EditProfileSkills extends ProfileFormPage
                     ->reorderableWithDragAndDrop()
                     ->collapsible()
                     ->addActionLabel('Додати групу')
-                    ->itemLabel(static fn (array $state): string|null => is_string($state['name'] ?? null) ? $state['name'] : null),
+                    ->itemLabel(fn (array $state): string|null => self::translationWithFallback($state['name'] ?? null, $this->activeDataLocale())),
             ]);
     }
 

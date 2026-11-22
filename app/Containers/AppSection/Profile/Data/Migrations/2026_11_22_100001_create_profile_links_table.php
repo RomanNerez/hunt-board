@@ -13,8 +13,8 @@ return new class extends Migration {
         Schema::create('profile_links', static function (Blueprint $table): void {
             $table->id();
             $table->foreignId('user_id')->index()->constrained()->cascadeOnDelete();
-            $table->string('label', 100);
-            $table->string('url', 2048);
+            $table->jsonb('label');
+            $table->jsonb('url');
             $table->unsignedSmallInteger('sort');
             $table->timestamps();
         });

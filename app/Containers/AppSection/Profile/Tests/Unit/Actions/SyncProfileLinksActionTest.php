@@ -67,6 +67,26 @@ final class SyncProfileLinksActionTest extends UnitTestCase
     }
 
     /**
+     * @return void
+     */
+    public function testStoresBothLabelsAndUrlsAndDropsBlankEnglish(): void
+    {
+        $user = User::factory()->createOne();
+
+        app(SyncProfileLinksAction::class)->run($user->id, [
+            ['label' => ['uk' => 'Портфоліо', 'en' => 'Portfolio'], 'url' => ['uk' => 'https://example.com/uk', 'en' => 'https://example.com/en']],
+            ['label' => ['uk' => ' GitHub ', 'en' => ''], 'url' => ['uk' => ' https://github.com/roman ', 'en' => '']],
+        ]);
+
+        $links = ProfileLink::query()->where('user_id', $user->id)->orderBy('sort')->get();
+
+        $this->assertEquals(['uk' => 'Портфоліо', 'en' => 'Portfolio'], $links[0]->getTranslations('label'));
+        $this->assertSame(['uk' => 'GitHub'], $links[1]->getTranslations('label'));
+        $this->assertEquals(['uk' => 'https://example.com/uk', 'en' => 'https://example.com/en'], $links[0]->getTranslations('url'));
+        $this->assertSame(['uk' => 'https://github.com/roman'], $links[1]->getTranslations('url'));
+    }
+
+    /**
      * @param int $userId
      *
      * @return array<int, array{string, int}>
