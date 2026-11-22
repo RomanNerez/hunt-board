@@ -1,0 +1,6 @@
+{
+    "name": "apiato/profile",
+    "description": "Profile Container",
+    "type": "apiato-container",
+    "require": {}
+}
