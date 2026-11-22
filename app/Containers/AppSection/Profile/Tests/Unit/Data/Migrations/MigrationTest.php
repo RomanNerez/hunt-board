@@ -85,6 +85,22 @@ final class MigrationTest extends UnitTestCase
     }
 
     /**
+     * @return void
+     */
+    public function testProfileSkillGroupsTableHasExpectedColumns(): void
+    {
+        $this->assertDatabaseTable('profile_skill_groups', [
+            'id' => 'int8',
+            'user_id' => 'int8',
+            'name' => 'varchar',
+            'skills' => 'json',
+            'sort' => 'int2',
+            'created_at' => 'timestamp',
+            'updated_at' => 'timestamp',
+        ]);
+    }
+
+    /**
      * @param string $table
      * @param list<string> $columns
      *

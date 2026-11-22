@@ -7,6 +7,7 @@ use App\Containers\AppSection\Profile\UI\Filament\Pages\EditProfileEducation;
 use App\Containers\AppSection\Profile\UI\Filament\Pages\EditProfileGeneral;
 use App\Containers\AppSection\Profile\UI\Filament\Pages\EditProfileLanguages;
 use App\Containers\AppSection\Profile\UI\Filament\Pages\EditProfileLinks;
+use App\Containers\AppSection\Profile\UI\Filament\Pages\EditProfileSkills;
 use App\Containers\AppSection\Profile\UI\Filament\Pages\ProfileFormPage;
 use App\Containers\AppSection\User\Models\User;
 use Filament\Navigation\NavigationItem;
@@ -28,22 +29,29 @@ final class ProfileSubNavigationTest extends FunctionalTestCase
         /** @var EditProfileEducation $page */
         $page = Livewire::test(EditProfileEducation::class)->instance();
 
-        $labels = [];
-
-        foreach ($page->getCachedSubNavigation() as $group) {
-            /** @var NavigationItem $item */
-            foreach (collect($group->getItems()) as $item) {
-                $label = $item->getLabel();
-                $labels[] = $label instanceof Htmlable ? $label->toHtml() : $label;
-            }
-        }
-
         $this->assertSame(SubNavigationPosition::Start, $page::getSubNavigationPosition());
-        $this->assertSame(['Загальне', 'Посилання', 'Освіта', 'Мови'], $labels);
+        $this->assertSame(['Загальне', 'Навички', 'Посилання', 'Освіта', 'Мови'], $this->subNavigationLabels($page));
 
         $this->get('/admin/profile/education')
             ->assertOk()
-            ->assertSeeInOrder(['fi-page-sub-navigation-sidebar', 'Загальне', 'Посилання', 'aria-current="page"', 'Освіта', 'Мови'], false);
+            ->assertSeeInOrder(['fi-page-sub-navigation-sidebar', 'Загальне', 'Навички', 'Посилання', 'aria-current="page"', 'Освіта', 'Мови'], false);
+    }
+
+    /**
+     * @return void
+     */
+    public function testSkillsPageIsSecondAndActiveOnItsPage(): void
+    {
+        $this->actingAs(User::factory()->createOne());
+
+        /** @var EditProfileSkills $page */
+        $page = Livewire::test(EditProfileSkills::class)->instance();
+
+        $this->assertSame(['Загальне', 'Навички', 'Посилання', 'Освіта', 'Мови'], $this->subNavigationLabels($page));
+
+        $this->get('/admin/profile/skills')
+            ->assertOk()
+            ->assertSeeInOrder(['fi-page-sub-navigation-sidebar', 'Загальне', 'aria-current="page"', 'Навички', 'Посилання', 'Освіта', 'Мови'], false);
     }
 
     /**
@@ -55,6 +63,7 @@ final class ProfileSubNavigationTest extends FunctionalTestCase
 
         $pages = [
             'general' => EditProfileGeneral::class,
+            'skills' => EditProfileSkills::class,
             'links' => EditProfileLinks::class,
             'education' => EditProfileEducation::class,
             'languages' => EditProfileLanguages::class,
@@ -64,5 +73,25 @@ final class ProfileSubNavigationTest extends FunctionalTestCase
             $this->assertSame(url("/admin/profile/{$slug}"), $page::getUrl());
             $this->get("/admin/profile/{$slug}")->assertOk();
         }
+    }
+
+    /**
+     * @param ProfileFormPage $page
+     *
+     * @return list<string>
+     */
+    private function subNavigationLabels(ProfileFormPage $page): array
+    {
+        $labels = [];
+
+        foreach ($page->getCachedSubNavigation() as $group) {
+            /** @var NavigationItem $item */
+            foreach (collect($group->getItems()) as $item) {
+                $label = $item->getLabel();
+                $labels[] = $label instanceof Htmlable ? $label->toHtml() : $label;
+            }
+        }
+
+        return $labels;
     }
 }

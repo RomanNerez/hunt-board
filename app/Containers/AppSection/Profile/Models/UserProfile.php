@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property Collection<int, ProfileLink> $links
  * @property Collection<int, ProfileEducation> $educations
  * @property Collection<int, ProfileLanguage> $languages
+ * @property Collection<int, ProfileSkillGroup> $skillGroups
  *
  * @method static UserProfileFactory<self> factory(int|null $count = null, array<string, mixed> $state = [])
  */
@@ -75,5 +76,13 @@ final class UserProfile extends ParentModel
     public function languages(): HasMany
     {
         return $this->hasMany(ProfileLanguage::class, 'user_id', 'user_id')->orderBy('sort');
+    }
+
+    /**
+     * @return HasMany<ProfileSkillGroup, $this>
+     */
+    public function skillGroups(): HasMany
+    {
+        return $this->hasMany(ProfileSkillGroup::class, 'user_id', 'user_id')->orderBy('sort');
     }
 }
