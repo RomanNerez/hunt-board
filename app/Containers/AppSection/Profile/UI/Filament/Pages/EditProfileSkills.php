@@ -5,8 +5,8 @@ namespace App\Containers\AppSection\Profile\UI\Filament\Pages;
 use App\Containers\AppSection\Profile\Actions\SyncProfileSkillGroupsAction;
 use App\Containers\AppSection\Profile\Enums\ProfileLocale;
 use App\Containers\AppSection\Profile\Models\ProfileSkillGroup;
+use App\Containers\AppSection\Stack\UI\Filament\Components\StackSelect;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 
@@ -39,12 +39,13 @@ final class EditProfileSkills extends ProfileFormPage
     {
         $this->form->fill([
             'groups' => ProfileSkillGroup::query()
+                ->with('stacks')
                 ->where('user_id', $this->userId())
                 ->orderBy('sort')
                 ->get()
                 ->map(static fn (ProfileSkillGroup $group): array => [
                     'name' => self::localeValues($group->getTranslations('name')),
-                    'skills' => $group->skills,
+                    'stacks' => $group->stacks->modelKeys(),
                 ])
                 ->all(),
         ]);
@@ -70,12 +71,8 @@ final class EditProfileSkills extends ProfileFormPage
                                 ProfileLocale::Ukrainian => ['Backend', 'Frontend', 'Бази даних', 'DevOps', 'Інструменти'],
                                 ProfileLocale::English => ['Backend', 'Frontend', 'Databases', 'DevOps', 'Tools'],
                             }), required: true),
-                        TagsInput::make('skills')
-                            ->label('Технології')
-                            ->required()
-                            ->reorderable()
-                            ->nestedRecursiveRules(['max:100'])
-                            ->placeholder('Введіть технологію й натисніть Enter'),
+                        StackSelect::make('stacks', 'Технології')
+                            ->required(),
                     ])
                     ->defaultItems(0)
                     ->reorderableWithDragAndDrop()

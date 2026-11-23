@@ -4,6 +4,7 @@ namespace App\Containers\AppSection\Profile\Data\Factories;
 
 use App\Containers\AppSection\Profile\Models\ProfileProject;
 use App\Containers\AppSection\Profile\Models\ProfileWorkExperience;
+use App\Containers\AppSection\Stack\Models\Stack;
 use App\Ship\Parents\Factories\Factory as ParentFactory;
 
 /**
@@ -30,7 +31,6 @@ final class ProfileProjectFactory extends ParentFactory
             'name' => fake()->randomElement(['Особистий кабінет клієнта', 'Промо-лендинг', 'Аукціон з продажу автомобілів', 'CRM для відділу продажів']),
             'started_on' => $startedOn->format('Y-m-d'),
             'finished_on' => fake()->dateTimeBetween($startedOn, '-1 month')->format('Y-m-d'),
-            'technologies' => fake()->randomElements(['PHP', 'Laravel', 'Vue 2', 'Vuex', 'MySQL', 'PostgreSQL', 'jQuery', 'Redis'], fake()->numberBetween(2, 4)),
         ];
     }
 
@@ -53,5 +53,19 @@ final class ProfileProjectFactory extends ParentFactory
                 'en' => '<p>Database migration from MySQL to PostgreSQL.</p><ul><li><p>Migrated over 10M records</p></li></ul>',
             ],
         ]);
+    }
+
+    /**
+     * @param int $count
+     *
+     * @return static
+     */
+    public function withStacks(int $count = 3): static
+    {
+        return $this->afterCreating(static function (ProfileProject $record) use ($count): void {
+            foreach (Stack::factory()->count($count)->create()->values() as $sort => $stack) {
+                $record->stacks()->attach($stack->id, ['sort' => $sort]);
+            }
+        });
     }
 }

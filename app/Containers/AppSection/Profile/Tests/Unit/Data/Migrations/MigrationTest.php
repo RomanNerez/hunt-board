@@ -96,7 +96,6 @@ final class MigrationTest extends UnitTestCase
             'id' => 'int8',
             'user_id' => 'int8',
             'name' => 'jsonb',
-            'skills' => 'json',
             'sort' => 'int2',
             'created_at' => 'timestamp',
             'updated_at' => 'timestamp',
@@ -154,7 +153,6 @@ final class MigrationTest extends UnitTestCase
             'name' => 'jsonb',
             'started_on' => 'date',
             'finished_on' => 'date',
-            'technologies' => 'json',
             'description' => 'jsonb',
             'created_at' => 'timestamp',
             'updated_at' => 'timestamp',
@@ -163,7 +161,7 @@ final class MigrationTest extends UnitTestCase
         $this->assertTrue($this->hasIndexOn('profile_projects', ['work_experience_id', 'started_on']));
         $this->assertSame(
             ['finished_on', 'description'],
-            $this->nullableColumns('profile_projects', ['work_experience_id', 'name', 'started_on', 'finished_on', 'technologies', 'description']),
+            $this->nullableColumns('profile_projects', ['work_experience_id', 'name', 'started_on', 'finished_on', 'description']),
         );
     }
 
@@ -221,7 +219,6 @@ final class MigrationTest extends UnitTestCase
             'work_experience_id' => $workExperienceId,
             'name' => '{"uk": "Аукціон з продажу автомобілів"}',
             'started_on' => '2020-08-29',
-            'technologies' => '["PostgreSQL"]',
         ]);
     }
 

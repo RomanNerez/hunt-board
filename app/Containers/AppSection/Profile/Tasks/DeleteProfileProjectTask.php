@@ -28,6 +28,8 @@ final class DeleteProfileProjectTask extends ParentTask
      */
     public function run(int $id): bool
     {
+        ProfileProject::detachStacksFrom(ProfileProject::query()->whereKey($id));
+
         return $this->repository->delete($id);
     }
 }

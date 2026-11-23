@@ -1,0 +1,6 @@
+{
+    "name": "apiato/stack",
+    "description": "Stack Container",
+    "type": "apiato-container",
+    "require": {}
+}

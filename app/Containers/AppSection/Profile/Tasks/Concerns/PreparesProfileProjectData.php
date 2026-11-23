@@ -8,14 +8,13 @@ use Illuminate\Validation\ValidationException;
 
 trait PreparesProfileProjectData
 {
-    use NormalizesStringList;
     use NormalizesTranslations;
     use ParsesDates;
 
     /**
      * @var list<string>
      */
-    private static array $projectAttributes = ['name', 'started_on', 'finished_on', 'technologies', 'description'];
+    private static array $projectAttributes = ['name', 'started_on', 'finished_on', 'description'];
 
     /**
      * @param array<string, mixed> $data
@@ -27,10 +26,6 @@ trait PreparesProfileProjectData
         /** @var array<string, mixed> $attributes */
         $attributes = Arr::only($data, self::$projectAttributes);
         $attributes = $this->normalizeTranslations($attributes, ['name']);
-
-        if (array_key_exists('technologies', $attributes)) {
-            $attributes['technologies'] = $this->normalizeStringList($attributes['technologies']);
-        }
 
         if (array_key_exists('description', $attributes)) {
             $attributes['description'] = $this->normalizeTranslation($this->sanitizeRichText($attributes['description']));

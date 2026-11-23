@@ -37,7 +37,6 @@ final class CreateProfileProjectTask extends ParentTask
         $this->assertPeriodOrder($attributes['started_on'] ?? null, $attributes['finished_on'] ?? null);
 
         return $this->repository->create([
-            'technologies' => [],
             ...$attributes,
             'work_experience_id' => $workExperienceId,
         ]);

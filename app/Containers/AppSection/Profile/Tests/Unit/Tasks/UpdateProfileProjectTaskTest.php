@@ -38,14 +38,12 @@ final class UpdateProfileProjectTaskTest extends UnitTestCase
     {
         $result = app(UpdateProfileProjectTask::class)->run($this->project->id, [
             'name' => ['uk' => 'Аукціон з продажу автомобілів', 'en' => ''],
-            'technologies' => ['Laravel', 'Laravel'],
             'description' => ['uk' => '<p>Опис</p>'],
             'finished_on' => null,
         ])->refresh();
 
         $this->assertSame($this->project->id, $result->id);
         $this->assertSame(['uk' => 'Аукціон з продажу автомобілів'], $result->getTranslations('name'));
-        $this->assertSame(['Laravel'], $result->technologies);
         $this->assertSame('<p>Опис</p>', $result->description);
         $this->assertNull($result->finished_on);
     }

@@ -13,13 +13,12 @@ final class ProfileProjectFactoryTest extends UnitTestCase
     /**
      * @return void
      */
-    public function testCreatesFinishedProjectWithStack(): void
+    public function testCreatesFinishedProjectWithoutStack(): void
     {
         $record = ProfileProject::factory()->createOne()->refresh();
 
         $this->assertNotSame('', $record->name);
-        $this->assertNotEmpty($record->technologies);
-        $this->assertContainsOnly('string', $record->technologies);
+        $this->assertCount(0, $record->stacks()->get());
         $this->assertNotNull($record->finished_on);
         $this->assertTrue($record->finished_on->greaterThanOrEqualTo($record->started_on));
         $this->assertNull($record->description);
@@ -46,5 +45,15 @@ final class ProfileProjectFactoryTest extends UnitTestCase
 
         $this->assertArrayHasKey('uk', $translations);
         $this->assertArrayHasKey('en', $translations);
+    }
+
+    /**
+     * @return void
+     */
+    public function testWithStacksStateAttachesOrderedStacks(): void
+    {
+        $record = ProfileProject::factory()->withStacks(2)->createOne();
+
+        $this->assertSame([0, 1], $record->stacks()->get()->pluck('pivot.sort')->all());
     }
 }

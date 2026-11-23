@@ -9,6 +9,7 @@ use App\Containers\AppSection\Profile\UI\Filament\Resources\WorkExperiences\Page
 use App\Containers\AppSection\Profile\UI\Filament\Resources\WorkExperiences\Pages\ManageWorkExperiences;
 use App\Containers\AppSection\Profile\UI\Filament\Resources\WorkExperiences\Schemas\ProjectForm;
 use App\Containers\AppSection\Profile\UI\Filament\Resources\WorkExperiences\Tables\ProjectsTable;
+use App\Containers\AppSection\Stack\Models\Stack;
 use App\Containers\AppSection\User\Models\User;
 use Filament\Actions\CreateAction;
 use Filament\Actions\EditAction;
@@ -128,7 +129,7 @@ final class ManageWorkExperienceProjectsTest extends FunctionalTestCase
         $this->assertSame('Аукціон з продажу автомобілів', $project->name);
         $this->assertSame('2020-08-29', $project->started_on->toDateString());
         $this->assertSame('2020-10-12', $project->finished_on?->toDateString());
-        $this->assertSame(['PostgreSQL', 'MySQL', 'jQuery'], $project->technologies);
+        $this->assertSame(['PostgreSQL', 'MySQL', 'jQuery'], $project->stacks()->pluck('name')->all());
         $this->assertNull($project->description);
     }
 
@@ -194,7 +195,6 @@ final class ManageWorkExperienceProjectsTest extends FunctionalTestCase
             'missing name' => [['name' => ['uk' => '']], 'name.uk', 'required'],
             'missing start date' => [['started_on' => null], 'started_on', 'required'],
             'too long name' => [['name' => ['uk' => str_repeat('a', 256)]], 'name.uk', 'max'],
-            'too long technology' => [['technologies' => [str_repeat('a', 101)]], 'technologies.0', 'max'],
             'finished before started' => [['started_on' => '2020-09-01', 'finished_on' => '2020-06-01'], 'finished_on', 'after_or_equal'],
         ];
     }
@@ -255,7 +255,8 @@ final class ManageWorkExperienceProjectsTest extends FunctionalTestCase
     {
         $this->actingAs($this->user);
         $experience = ProfileWorkExperience::factory()->createOne(['user_id' => $this->user->id]);
-        $cabinet = ProfileProject::factory()->createOne(['work_experience_id' => $experience->id, 'name' => 'Особистий кабінет клієнта', 'started_on' => '2019-09-03', 'finished_on' => '2020-08-21', 'technologies' => ['Laravel', 'Vue 2']]);
+        $cabinet = ProfileProject::factory()->createOne(['work_experience_id' => $experience->id, 'name' => 'Особистий кабінет клієнта', 'started_on' => '2019-09-03', 'finished_on' => '2020-08-21']);
+        $this->attachStacks($cabinet, 'Laravel', 'Vue 2');
         $landing = ProfileProject::factory()->createOne(['work_experience_id' => $experience->id, 'name' => 'Промо-лендинг', 'started_on' => '2020-03-01']);
         $auction = $this->project();
 
@@ -265,6 +266,79 @@ final class ManageWorkExperienceProjectsTest extends FunctionalTestCase
             ->assertSee('09.2019 — 08.2020')
             ->assertSee('Vue 2')
             ->assertDontSee('Аукціон з продажу автомобілів');
+    }
+
+    /**
+     * @return void
+     */
+    public function testStackKeepsSelectionOrderInFormAndTable(): void
+    {
+        $this->actingAs($this->user);
+        $stack = $this->stackIds('Vuex', 'MySQL', 'Laravel', 'Vue 2');
+        $selected = [$stack[2], $stack[3], $stack[0], $stack[1]];
+
+        $this->projectsPage()
+            ->callAction(TestAction::make('create'), data: [...$this->validData(), 'stacks' => $selected])
+            ->assertHasNoFormErrors();
+
+        $project = ProfileProject::query()->sole();
+
+        $this->assertSame(['Laravel', 'Vue 2', 'Vuex', 'MySQL'], $project->stacks()->pluck('name')->all());
+        $this->projectsPage()->assertSeeInOrder(['Laravel', 'Vue 2', 'Vuex', 'MySQL']);
+        $this->projectsPage()
+            ->mountAction(TestAction::make('edit')->table($project))
+            ->assertSchemaStateSet(['stacks' => $selected]);
+    }
+
+    /**
+     * @return void
+     */
+    public function testCreatesStackFromProjectFormKeepingFormOpen(): void
+    {
+        $this->actingAs($this->user);
+        [$laravel] = $this->stackIds('Laravel');
+
+        $component = $this->projectsPage()
+            ->mountAction(TestAction::make('create'))
+            ->fillForm(['stacks' => [$laravel]])
+            ->callAction(TestAction::make('createOption')->schemaComponent('stacks'), data: ['name' => 'Vuex']);
+
+        $vuex = Stack::query()->where('name', 'Vuex')->firstOrFail();
+
+        $component
+            ->assertSchemaStateSet(['stacks' => [$laravel, $vuex->id]])
+            ->assertActionMounted(TestAction::make('create'));
+        $this->assertDatabaseCount(ProfileProject::class, 0);
+    }
+
+    /**
+     * @return void
+     */
+    public function testCreatesProjectWithoutStack(): void
+    {
+        $this->actingAs($this->user);
+
+        $this->projectsPage()
+            ->callAction(TestAction::make('create'), data: [...$this->validData(), 'stacks' => []])
+            ->assertHasNoFormErrors();
+
+        $this->assertCount(0, ProfileProject::query()->sole()->stacks()->get());
+    }
+
+    /**
+     * @return void
+     */
+    public function testRemovingStackFromStackKeepsCatalog(): void
+    {
+        $this->actingAs($this->user);
+        $project = $this->project();
+
+        $this->projectsPage()
+            ->callAction(TestAction::make('edit')->table($project), data: ['stacks' => $this->stackIds('PostgreSQL', 'jQuery')])
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(['PostgreSQL', 'jQuery'], $project->stacks()->pluck('name')->all());
+        $this->assertDatabaseHas(Stack::class, ['name' => 'MySQL']);
     }
 
     /**
@@ -293,7 +367,7 @@ final class ManageWorkExperienceProjectsTest extends FunctionalTestCase
                 'name.uk' => 'Аукціон',
                 'started_on' => '2020-08-29',
                 'finished_on' => '2020-10-12',
-                'technologies' => ['PostgreSQL', 'MySQL', 'jQuery'],
+                'stacks' => $this->stackIds('PostgreSQL', 'MySQL', 'jQuery'),
             ])
             ->fillForm(['name' => ['uk' => 'Аукціон з продажу автомобілів']])
             ->callMountedAction()
@@ -384,14 +458,29 @@ final class ManageWorkExperienceProjectsTest extends FunctionalTestCase
      */
     private function project(array $attributes = []): ProfileProject
     {
-        return ProfileProject::factory()->createOne([
+        $project = ProfileProject::factory()->createOne([
             'work_experience_id' => $this->experience->id,
             'name' => 'Аукціон з продажу автомобілів',
             'started_on' => '2020-08-29',
             'finished_on' => '2020-10-12',
-            'technologies' => ['PostgreSQL', 'MySQL', 'jQuery'],
             ...$attributes,
         ]);
+        $this->attachStacks($project, 'PostgreSQL', 'MySQL', 'jQuery');
+
+        return $project;
+    }
+
+    /**
+     * @param ProfileProject $project
+     * @param string ...$names
+     *
+     * @return void
+     */
+    private function attachStacks(ProfileProject $project, string ...$names): void
+    {
+        foreach ($this->stackIds(...$names) as $sort => $id) {
+            $project->stacks()->attach($id, ['sort' => $sort]);
+        }
     }
 
     /**
@@ -411,7 +500,17 @@ final class ManageWorkExperienceProjectsTest extends FunctionalTestCase
             'name' => ['uk' => 'Аукціон з продажу автомобілів'],
             'started_on' => '2020-08-29',
             'finished_on' => '2020-10-12',
-            'technologies' => ['PostgreSQL', 'MySQL', 'jQuery'],
+            'stacks' => $this->stackIds('PostgreSQL', 'MySQL', 'jQuery'),
         ];
+    }
+
+    /**
+     * @param string ...$names
+     *
+     * @return list<int>
+     */
+    private function stackIds(string ...$names): array
+    {
+        return array_map(static fn (string $name): int => Stack::query()->firstOrCreate(['name' => $name])->id, array_values($names));
     }
 }

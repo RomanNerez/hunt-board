@@ -13,13 +13,22 @@ final class ProfileSkillGroupFactoryTest extends UnitTestCase
     /**
      * @return void
      */
-    public function testCreatesNamedGroupWithSkills(): void
+    public function testCreatesNamedGroupWithoutStacks(): void
     {
         $record = ProfileSkillGroup::factory()->createOne()->refresh();
 
         $this->assertNotSame('', $record->name);
-        $this->assertNotEmpty($record->skills);
-        $this->assertContainsOnly('string', $record->skills);
         $this->assertSame(0, $record->sort);
+        $this->assertCount(0, $record->stacks()->get());
+    }
+
+    /**
+     * @return void
+     */
+    public function testWithStacksStateAttachesOrderedStacks(): void
+    {
+        $record = ProfileSkillGroup::factory()->withStacks(3)->createOne();
+
+        $this->assertSame([0, 1, 2], $record->stacks()->get()->pluck('pivot.sort')->all());
     }
 }

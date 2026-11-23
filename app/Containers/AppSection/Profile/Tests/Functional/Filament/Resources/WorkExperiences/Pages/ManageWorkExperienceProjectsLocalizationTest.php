@@ -8,6 +8,7 @@ use App\Containers\AppSection\Profile\Models\ProfileWorkExperience;
 use App\Containers\AppSection\Profile\Tests\FunctionalTestCase;
 use App\Containers\AppSection\Profile\UI\Filament\Resources\WorkExperiences\Pages\ManageWorkExperienceProjects;
 use App\Containers\AppSection\Profile\UI\Filament\Resources\WorkExperiences\Schemas\ProjectForm;
+use App\Containers\AppSection\Stack\Models\Stack;
 use App\Containers\AppSection\User\Models\User;
 use Filament\Actions\Testing\TestAction;
 use Filament\Forms\Components\RichEditor;
@@ -124,13 +125,15 @@ final class ManageWorkExperienceProjectsLocalizationTest extends FunctionalTestC
      */
     public function testEnglishTableKeepsSharedFieldsAndFallsBackToUkrainian(): void
     {
-        ProfileProject::factory()->createOne([
+        $auction = ProfileProject::factory()->createOne([
             'work_experience_id' => $this->experience->id,
             'name' => ['uk' => 'Аукціон з продажу автомобілів'],
             'started_on' => '2020-08-29',
             'finished_on' => '2020-10-12',
-            'technologies' => ['Laravel', 'Vue 2'],
         ]);
+        foreach ($this->stackIds('Laravel', 'Vue 2') as $sort => $id) {
+            $auction->stacks()->attach($id, ['sort' => $sort]);
+        }
         ProfileProject::factory()->createOne([
             'work_experience_id' => $this->experience->id,
             'name' => ['uk' => 'Промо-лендинг', 'en' => 'Promo landing'],
@@ -164,7 +167,17 @@ final class ManageWorkExperienceProjectsLocalizationTest extends FunctionalTestC
             'name' => ['uk' => 'Аукціон з продажу автомобілів'],
             'started_on' => '2020-08-29',
             'finished_on' => '2020-10-12',
-            'technologies' => ['PostgreSQL'],
+            'stacks' => $this->stackIds('PostgreSQL'),
         ];
+    }
+
+    /**
+     * @param string ...$names
+     *
+     * @return list<int>
+     */
+    private function stackIds(string ...$names): array
+    {
+        return array_map(static fn (string $name): int => Stack::query()->firstOrCreate(['name' => $name])->id, array_values($names));
     }
 }

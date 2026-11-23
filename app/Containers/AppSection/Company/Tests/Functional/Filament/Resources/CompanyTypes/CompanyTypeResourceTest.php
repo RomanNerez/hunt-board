@@ -64,14 +64,14 @@ final class CompanyTypeResourceTest extends FunctionalTestCase
     /**
      * @return void
      */
-    public function testSubNavigationListsStatusesFirstThenCompanyTypesAndDomains(): void
+    public function testSubNavigationListsStatusesFirstThenCompanyTypesDomainsAndStacks(): void
     {
         $this->actingAs(User::factory()->createOne());
 
         /** @var ManageCompanyTypes $page */
         $page = Livewire::test(ManageCompanyTypes::class)->instance();
 
-        $this->assertSame(['Статуси', 'Типи компаній', 'Домени'], $this->navigationLabels($page->getCachedSubNavigation()));
+        $this->assertSame(['Статуси', 'Типи компаній', 'Домени', 'Технології'], $this->navigationLabels($page->getCachedSubNavigation()));
     }
 
     /**

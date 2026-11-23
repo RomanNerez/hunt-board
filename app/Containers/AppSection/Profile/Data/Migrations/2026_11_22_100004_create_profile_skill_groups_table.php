@@ -14,7 +14,6 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('user_id')->index()->constrained()->cascadeOnDelete();
             $table->jsonb('name');
-            $table->json('skills');
             $table->unsignedSmallInteger('sort');
             $table->timestamps();
         });

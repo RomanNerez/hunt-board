@@ -16,7 +16,6 @@ return new class extends Migration {
             $table->jsonb('name');
             $table->date('started_on');
             $table->date('finished_on')->nullable();
-            $table->json('technologies');
             $table->jsonb('description')->nullable();
             $table->timestamps();
 

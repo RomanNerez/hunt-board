@@ -33,7 +33,7 @@ final class ProjectsTable
         return $table
             ->modelLabel('проєкт')
             ->pluralModelLabel('Проєкти')
-            ->modifyQueryUsing(static fn (Builder $query): Builder => $query->with('workExperience'))
+            ->modifyQueryUsing(static fn (Builder $query): Builder => $query->with(['workExperience', 'stacks']))
             ->columns([
                 TextColumn::make('name')
                     ->label('Проєкт')
@@ -42,7 +42,7 @@ final class ProjectsTable
                     ->label('Період')
                     ->getStateUsing(static fn (ProfileProject $record): string => PeriodFormatter::monthYear($record->started_on, $record->finished_on))
                     ->sortable(query: static fn (Builder $query, string $direction): Builder => $query->reorder('started_on', $direction)->orderBy('id', $direction)),
-                TextColumn::make('technologies')
+                TextColumn::make('stacks.name')
                     ->label('Стек')
                     ->badge()
                     ->limitList(4),

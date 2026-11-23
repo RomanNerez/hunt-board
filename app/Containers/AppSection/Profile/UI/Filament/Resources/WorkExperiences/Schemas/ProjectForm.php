@@ -4,9 +4,9 @@ namespace App\Containers\AppSection\Profile\UI\Filament\Resources\WorkExperience
 
 use App\Containers\AppSection\Profile\Models\ProfileProject;
 use App\Containers\AppSection\Profile\UI\Filament\Resources\WorkExperiences\Pages\ManageWorkExperienceProjects;
+use App\Containers\AppSection\Stack\UI\Filament\Components\StackSelect;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\RichEditor;
-use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Schema;
@@ -39,11 +39,7 @@ final class ProjectForm
                     ->native(false)
                     ->displayFormat('d.m.Y')
                     ->afterOrEqual('started_on'),
-                TagsInput::make('technologies')
-                    ->label('Стек')
-                    ->reorderable()
-                    ->nestedRecursiveRules(['max:100'])
-                    ->placeholder('Введіть технологію й натисніть Enter')
+                StackSelect::make('stacks', 'Стек')
                     ->columnSpanFull(),
                 ...ManageWorkExperienceProjects::translatable('description', static fn (string $name): RichEditor => RichEditor::make($name)
                     ->label('Опис')
@@ -66,7 +62,7 @@ final class ProjectForm
             'name' => ManageWorkExperienceProjects::localeValues($record->getTranslations('name')),
             'started_on' => $record->started_on->toDateString(),
             'finished_on' => $record->finished_on?->toDateString(),
-            'technologies' => $record->technologies,
+            'stacks' => $record->stacks->modelKeys(),
             'description' => ManageWorkExperienceProjects::localeValues($record->getTranslations('description')),
         ];
     }

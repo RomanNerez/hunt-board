@@ -90,19 +90,6 @@ final class CreateProfileProjectTaskTest extends UnitTestCase
     /**
      * @return void
      */
-    public function testStackIsTrimmedUniqueAndKeepsOrder(): void
-    {
-        $record = app(CreateProfileProjectTask::class)->run($this->experience->id, [
-            ...$this->validData(),
-            'technologies' => ['Laravel', 'Vue 2', 'MySQL', ' MySQL ', '', 'Vuex'],
-        ])->refresh();
-
-        $this->assertSame(['Laravel', 'Vue 2', 'MySQL', 'Vuex'], $record->technologies);
-    }
-
-    /**
-     * @return void
-     */
     public function testIgnoresOwnerAndUnknownAttributesFromData(): void
     {
         $other = ProfileWorkExperience::factory()->createOne();
@@ -165,7 +152,6 @@ final class CreateProfileProjectTaskTest extends UnitTestCase
             'name' => ['uk' => 'Аукціон з продажу автомобілів'],
             'started_on' => '2020-08-29',
             'finished_on' => '2020-10-12',
-            'technologies' => ['PostgreSQL', 'MySQL', 'jQuery'],
         ];
     }
 }

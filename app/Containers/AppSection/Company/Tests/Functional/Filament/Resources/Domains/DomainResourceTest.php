@@ -64,14 +64,14 @@ final class DomainResourceTest extends FunctionalTestCase
     /**
      * @return void
      */
-    public function testSubNavigationListsStatusesFirstThenCompanyTypesAndDomains(): void
+    public function testSubNavigationListsStatusesFirstThenCompanyTypesDomainsAndStacks(): void
     {
         $this->actingAs(User::factory()->createOne());
 
         /** @var ManageDomains $page */
         $page = Livewire::test(ManageDomains::class)->instance();
 
-        $this->assertSame(['Статуси', 'Типи компаній', 'Домени'], $this->navigationLabels($page->getCachedSubNavigation()));
+        $this->assertSame(['Статуси', 'Типи компаній', 'Домени', 'Технології'], $this->navigationLabels($page->getCachedSubNavigation()));
     }
 
     /**
