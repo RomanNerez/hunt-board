@@ -9,6 +9,7 @@ use App\Containers\AppSection\Profile\UI\Filament\Pages\EditProfileLanguages;
 use App\Containers\AppSection\Profile\UI\Filament\Pages\EditProfileLinks;
 use App\Containers\AppSection\Profile\UI\Filament\Pages\EditProfileSkills;
 use App\Containers\AppSection\Profile\UI\Filament\Pages\ProfileFormPage;
+use App\Containers\AppSection\Profile\UI\Filament\Pages\ViewResume;
 use App\Containers\AppSection\Profile\UI\Filament\Resources\WorkExperiences\Pages\ManageWorkExperiences;
 use App\Containers\AppSection\User\Models\User;
 use Filament\Navigation\NavigationItem;
@@ -20,12 +21,13 @@ use PHPUnit\Framework\Attributes\CoversClass;
 
 #[CoversClass(ProfileFormPage::class)]
 #[CoversClass(ManageWorkExperiences::class)]
+#[CoversClass(ViewResume::class)]
 final class ProfileSubNavigationTest extends FunctionalTestCase
 {
     /**
      * @var list<string>
      */
-    private const ORDER = ['Загальне', 'Досвід роботи', 'Навички', 'Посилання', 'Освіта', 'Мови'];
+    private const ORDER = ['Загальне', 'Досвід роботи', 'Навички', 'Посилання', 'Освіта', 'Мови', 'Резюме'];
 
     /**
      * @return void
@@ -83,6 +85,24 @@ final class ProfileSubNavigationTest extends FunctionalTestCase
     /**
      * @return void
      */
+    public function testResumePageIsLastAfterLanguagesAndActiveOnItsPage(): void
+    {
+        $this->actingAs(User::factory()->createOne());
+
+        /** @var ViewResume $page */
+        $page = Livewire::test(ViewResume::class)->instance();
+
+        $this->assertSame(SubNavigationPosition::Start, $page::getSubNavigationPosition());
+        $this->assertSame(self::ORDER, $this->subNavigationLabels($page));
+
+        $this->get('/admin/profile/resume')
+            ->assertOk()
+            ->assertSeeInOrder(['fi-page-sub-navigation-sidebar', 'Загальне', 'Досвід роботи', 'Навички', 'Посилання', 'Освіта', 'Мови', 'aria-current="page"', 'Резюме'], false);
+    }
+
+    /**
+     * @return void
+     */
     public function testPagesAreServedUnderProfilePrefix(): void
     {
         $this->actingAs(User::factory()->createOne());
@@ -94,6 +114,7 @@ final class ProfileSubNavigationTest extends FunctionalTestCase
             'links' => EditProfileLinks::class,
             'education' => EditProfileEducation::class,
             'languages' => EditProfileLanguages::class,
+            'resume' => ViewResume::class,
         ];
 
         foreach ($pages as $slug => $page) {

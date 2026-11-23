@@ -29,4 +29,21 @@ enum LanguageLevel: string implements HasLabel
             self::NATIVE => 'Рідна',
         };
     }
+
+    /**
+     * @param ProfileLocale $locale
+     *
+     * @return string
+     */
+    public function resumeLabel(ProfileLocale $locale): string
+    {
+        if (self::NATIVE !== $this) {
+            return $this->getLabel();
+        }
+
+        return match ($locale) {
+            ProfileLocale::Ukrainian => 'Рідна',
+            ProfileLocale::English => 'Native',
+        };
+    }
 }

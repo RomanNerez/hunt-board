@@ -3,6 +3,7 @@
     "description": "Profile Container",
     "type": "apiato-container",
     "require": {
-        "spatie/laravel-translatable": "^6.0"
+        "spatie/laravel-translatable": "^6.0",
+        "spatie/laravel-pdf": "^2.14"
     }
 }

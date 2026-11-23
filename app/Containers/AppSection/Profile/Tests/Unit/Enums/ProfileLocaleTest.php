@@ -27,4 +27,13 @@ final class ProfileLocaleTest extends UnitTestCase
     {
         $this->assertSame(['Українська', 'English'], array_map(static fn (ProfileLocale $locale): string => $locale->getLabel(), ProfileLocale::cases()));
     }
+
+    /**
+     * @return void
+     */
+    public function testFileSuffixesAreUppercaseCountryCodes(): void
+    {
+        $this->assertSame('UA', ProfileLocale::Ukrainian->fileSuffix());
+        $this->assertSame('EN', ProfileLocale::English->fileSuffix());
+    }
 }

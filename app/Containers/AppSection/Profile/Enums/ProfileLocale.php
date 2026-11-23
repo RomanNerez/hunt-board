@@ -36,6 +36,17 @@ enum ProfileLocale: string implements HasLabel
     /**
      * @return string
      */
+    public function fileSuffix(): string
+    {
+        return match ($this) {
+            self::Ukrainian => 'UA',
+            self::English => 'EN',
+        };
+    }
+
+    /**
+     * @return string
+     */
     public function getLabel(): string
     {
         return match ($this) {

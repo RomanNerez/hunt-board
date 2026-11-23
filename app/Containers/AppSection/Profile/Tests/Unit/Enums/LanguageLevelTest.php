@@ -3,6 +3,7 @@
 namespace App\Containers\AppSection\Profile\Tests\Unit\Enums;
 
 use App\Containers\AppSection\Profile\Enums\LanguageLevel;
+use App\Containers\AppSection\Profile\Enums\ProfileLocale;
 use App\Containers\AppSection\Profile\Tests\UnitTestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
 
@@ -20,5 +21,16 @@ final class LanguageLevelTest extends UnitTestCase
             ['A1 Beginner', 'A2 Elementary', 'B1 Intermediate', 'B2 Upper-Intermediate', 'C1 Advanced', 'C2 Proficient', 'Рідна'],
             $labels,
         );
+    }
+
+    /**
+     * @return void
+     */
+    public function testResumeLabelTranslatesOnlyNativeLevel(): void
+    {
+        $this->assertSame('Рідна', LanguageLevel::NATIVE->resumeLabel(ProfileLocale::Ukrainian));
+        $this->assertSame('Native', LanguageLevel::NATIVE->resumeLabel(ProfileLocale::English));
+        $this->assertSame('B2 Upper-Intermediate', LanguageLevel::B2->resumeLabel(ProfileLocale::Ukrainian));
+        $this->assertSame('B2 Upper-Intermediate', LanguageLevel::B2->resumeLabel(ProfileLocale::English));
     }
 }

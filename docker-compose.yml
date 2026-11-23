@@ -17,6 +17,8 @@ services:
     volumes:
       - ./:/var/www
       - ./phpstan_cache:/var/www/phpstan_cache
+    depends_on:
+      - gotenberg
     networks:
       - hunt-board
 
@@ -63,6 +65,13 @@ services:
     networks:
       - hunt-board
 
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: hunt-board-gotenberg
+    restart: unless-stopped
+    networks:
+      - hunt-board
+
   supervisor:
     build:
       args:
@@ -82,6 +91,7 @@ services:
     depends_on:
       - db
       - redis
+      - gotenberg
     networks:
       - hunt-board
 
