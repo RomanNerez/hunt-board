@@ -8,7 +8,9 @@ use App\Containers\AppSection\Profile\Models\Concerns\HasProfileTranslations;
 use App\Containers\AppSection\User\Models\User;
 use App\Ship\Parents\Models\Model as ParentModel;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
@@ -21,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  * @property User $user
+ * @property Collection<int, ProfileProject> $projects
  * @property array<string, array<string, string>> $translations
  *
  * @method static ProfileWorkExperienceFactory<self> factory(int|null $count = null, array<string, mixed> $state = [])
@@ -66,5 +69,15 @@ final class ProfileWorkExperience extends ParentModel
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return HasMany<ProfileProject, $this>
+     */
+    public function projects(): HasMany
+    {
+        return $this->hasMany(ProfileProject::class, 'work_experience_id')
+            ->orderByDesc('started_on')
+            ->orderByDesc('id');
     }
 }

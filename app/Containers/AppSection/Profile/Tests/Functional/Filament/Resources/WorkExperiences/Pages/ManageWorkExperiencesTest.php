@@ -4,6 +4,7 @@ namespace App\Containers\AppSection\Profile\Tests\Functional\Filament\Resources\
 
 use App\Containers\AppSection\Company\Models\Company;
 use App\Containers\AppSection\Profile\Enums\WorkExperienceType;
+use App\Containers\AppSection\Profile\Models\ProfileProject;
 use App\Containers\AppSection\Profile\Models\ProfileWorkExperience;
 use App\Containers\AppSection\Profile\Tests\FunctionalTestCase;
 use App\Containers\AppSection\Profile\UI\Filament\Resources\WorkExperiences\Pages\ManageWorkExperiences;
@@ -226,6 +227,56 @@ final class ManageWorkExperiencesTest extends FunctionalTestCase
             ->assertCanNotSeeTableRecords([$macPaw]);
 
         $this->assertModelMissing($macPaw);
+    }
+
+    /**
+     * @return void
+     */
+    public function testDeletingRecordDeletesItsProjectsAfterWarning(): void
+    {
+        $varteq = ProfileWorkExperience::factory()->createOne(['user_id' => $this->user->id, 'company_name' => 'VARTEQ Inc.']);
+        $auction = ProfileProject::factory()->createOne(['work_experience_id' => $varteq->id, 'name' => 'Аукціон з продажу автомобілів']);
+        $foreignProject = ProfileProject::factory()->createOne();
+
+        Livewire::test(ManageWorkExperiences::class)
+            ->mountAction(TestAction::make('delete')->table($varteq))
+            ->assertMountedActionModalSee('Разом із записом буде видалено всі його проєкти.')
+            ->callMountedAction()
+            ->assertNotified();
+
+        $this->assertModelMissing($varteq);
+        $this->assertModelMissing($auction);
+        $this->assertModelExists($foreignProject);
+    }
+
+    /**
+     * @return void
+     */
+    public function testBulkDeleteWarnsAboutProjects(): void
+    {
+        $record = ProfileWorkExperience::factory()->createOne(['user_id' => $this->user->id]);
+
+        Livewire::test(ManageWorkExperiences::class)
+            ->selectTableRecords([$record])
+            ->mountAction(TestAction::make('delete')->table()->bulk())
+            ->assertMountedActionModalSee('Разом із записом буде видалено всі його проєкти.');
+    }
+
+    /**
+     * @return void
+     */
+    public function testNarrowingPeriodIsSavedAndKeepsProjects(): void
+    {
+        $record = ProfileWorkExperience::factory()->createOne(['user_id' => $this->user->id, 'started_on' => '2019-09-03', 'finished_on' => '2020-08-21']);
+        $project = ProfileProject::factory()->createOne(['work_experience_id' => $record->id, 'started_on' => '2019-09-03', 'finished_on' => '2020-08-21']);
+
+        Livewire::test(ManageWorkExperiences::class)
+            ->callAction(TestAction::make('edit')->table($record), data: ['finished_on' => '2020-08-01'])
+            ->assertHasNoFormErrors()
+            ->assertNotified();
+
+        $this->assertSame('2020-08-01', $record->refresh()->finished_on?->toDateString());
+        $this->assertSame('2020-08-21', $project->refresh()->finished_on?->toDateString());
     }
 
     /**

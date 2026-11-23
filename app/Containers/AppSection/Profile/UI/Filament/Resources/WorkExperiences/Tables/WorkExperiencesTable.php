@@ -8,10 +8,14 @@ use App\Containers\AppSection\Profile\Enums\ProfileLocale;
 use App\Containers\AppSection\Profile\Models\ProfileWorkExperience;
 use App\Containers\AppSection\Profile\UI\Filament\Resources\WorkExperiences\Pages\ManageWorkExperiences;
 use App\Containers\AppSection\Profile\UI\Filament\Resources\WorkExperiences\Schemas\WorkExperienceForm;
+use App\Containers\AppSection\Profile\UI\Filament\Resources\WorkExperiences\WorkExperienceResource;
+use App\Containers\AppSection\Profile\UI\Filament\Support\PeriodFormatter;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
@@ -20,6 +24,11 @@ use Illuminate\Support\Collection;
 
 final class WorkExperiencesTable
 {
+    /**
+     * @var string
+     */
+    private const DELETE_WARNING = 'Разом із записом буде видалено всі його проєкти. Цю дію не можна скасувати.';
+
     /**
      * @param Table $table
      *
@@ -40,11 +49,15 @@ final class WorkExperiencesTable
                     ->getStateUsing(static fn (ProfileWorkExperience $record, HasTable $livewire): string|null => self::translated($record, 'role', $livewire)),
                 TextColumn::make('period')
                     ->label('Період')
-                    ->getStateUsing(static fn (ProfileWorkExperience $record): string => self::period($record))
+                    ->getStateUsing(static fn (ProfileWorkExperience $record): string => PeriodFormatter::monthYear($record->started_on, $record->finished_on))
                     ->sortable(query: static fn (Builder $query, string $direction): Builder => $query->orderBy('started_on', $direction)->orderBy('id', $direction)),
             ])
             ->defaultSort(static fn (Builder $query): Builder => $query->orderByDesc('started_on')->orderByDesc('id'))
             ->recordActions([
+                Action::make('projects')
+                    ->label('Проєкти')
+                    ->icon(Heroicon::OutlinedRectangleStack)
+                    ->url(static fn (ProfileWorkExperience $record): string => WorkExperienceResource::getUrl('projects', ['record' => $record])),
                 EditAction::make()
                     ->modalHeading('Редагувати досвід роботи')
                     ->fillForm(static fn (ProfileWorkExperience $record): array => WorkExperienceForm::recordState($record))
@@ -55,12 +68,14 @@ final class WorkExperiencesTable
                         return app(UpdateProfileWorkExperienceAction::class)->run($record->id, $attributes);
                     }),
                 DeleteAction::make()
+                    ->modalDescription(self::DELETE_WARNING)
                     ->using(static fn (ProfileWorkExperience $record): bool => app(DeleteProfileWorkExperienceAction::class)->run($record->id)),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
                         ->modalHeading('Видалити вибрані записи досвіду')
+                        ->modalDescription(self::DELETE_WARNING)
                         ->using(static function (Collection $records): void {
                             /** @var ProfileWorkExperience $record */
                             foreach ($records as $record) {
@@ -83,17 +98,5 @@ final class WorkExperiencesTable
         $locale = $livewire instanceof ManageWorkExperiences ? $livewire->activeDataLocale() : ProfileLocale::primary();
 
         return ManageWorkExperiences::translationWithFallback($record->getTranslations($attribute), $locale);
-    }
-
-    /**
-     * @param ProfileWorkExperience $record
-     *
-     * @return string
-     */
-    private static function period(ProfileWorkExperience $record): string
-    {
-        $finished = $record->finished_on?->format('m.Y') ?? 'дотепер';
-
-        return "{$record->started_on->format('m.Y')} — {$finished}";
     }
 }

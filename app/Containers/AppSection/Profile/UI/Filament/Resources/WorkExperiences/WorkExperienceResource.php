@@ -4,6 +4,7 @@ namespace App\Containers\AppSection\Profile\UI\Filament\Resources\WorkExperience
 
 use App\Containers\AppSection\Profile\Models\ProfileWorkExperience;
 use App\Containers\AppSection\Profile\UI\Filament\Clusters\Profile\ProfileCluster;
+use App\Containers\AppSection\Profile\UI\Filament\Resources\WorkExperiences\Pages\ManageWorkExperienceProjects;
 use App\Containers\AppSection\Profile\UI\Filament\Resources\WorkExperiences\Pages\ManageWorkExperiences;
 use App\Containers\AppSection\Profile\UI\Filament\Resources\WorkExperiences\Schemas\WorkExperienceForm;
 use App\Containers\AppSection\Profile\UI\Filament\Resources\WorkExperiences\Tables\WorkExperiencesTable;
@@ -93,6 +94,7 @@ final class WorkExperienceResource extends Resource
     {
         return [
             'index' => ManageWorkExperiences::route('/'),
+            'projects' => ManageWorkExperienceProjects::route('/{record}/projects'),
         ];
     }
 }

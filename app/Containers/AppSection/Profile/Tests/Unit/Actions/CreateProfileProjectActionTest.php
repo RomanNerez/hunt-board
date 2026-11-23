@@ -1,0 +1,55 @@
+<?php
+
+namespace App\Containers\AppSection\Profile\Tests\Unit\Actions;
+
+use App\Containers\AppSection\Profile\Actions\CreateProfileProjectAction;
+use App\Containers\AppSection\Profile\Models\ProfileProject;
+use App\Containers\AppSection\Profile\Models\ProfileWorkExperience;
+use App\Containers\AppSection\Profile\Tests\UnitTestCase;
+use Illuminate\Validation\ValidationException;
+use PHPUnit\Framework\Attributes\CoversClass;
+
+#[CoversClass(CreateProfileProjectAction::class)]
+final class CreateProfileProjectActionTest extends UnitTestCase
+{
+    /**
+     * @return void
+     */
+    public function testCreatesProjectForGivenWorkExperience(): void
+    {
+        $experience = ProfileWorkExperience::factory()->createOne();
+
+        $record = app(CreateProfileProjectAction::class)->run($experience->id, [
+            'name' => ['uk' => 'Особистий кабінет клієнта'],
+            'started_on' => '2024-09-01',
+            'finished_on' => null,
+            'technologies' => ['Laravel'],
+        ]);
+
+        $this->assertDatabaseHas(ProfileProject::class, [
+            'id' => $record->id,
+            'work_experience_id' => $experience->id,
+            'finished_on' => null,
+        ]);
+    }
+
+    /**
+     * @return void
+     */
+    public function testInvalidPeriodCreatesNothing(): void
+    {
+        $experience = ProfileWorkExperience::factory()->createOne();
+
+        try {
+            app(CreateProfileProjectAction::class)->run($experience->id, [
+                'name' => ['uk' => 'Промо-лендинг'],
+                'started_on' => '2020-09-01',
+                'finished_on' => '2020-01-01',
+            ]);
+            $this->fail('Invalid period was accepted.');
+        } catch (ValidationException) {
+        }
+
+        $this->assertDatabaseCount(ProfileProject::class, 0);
+    }
+}

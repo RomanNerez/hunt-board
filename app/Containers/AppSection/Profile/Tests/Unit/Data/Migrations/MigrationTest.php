@@ -144,6 +144,88 @@ final class MigrationTest extends UnitTestCase
     }
 
     /**
+     * @return void
+     */
+    public function testProfileProjectsTableHasExpectedColumns(): void
+    {
+        $this->assertDatabaseTable('profile_projects', [
+            'id' => 'int8',
+            'work_experience_id' => 'int8',
+            'name' => 'jsonb',
+            'started_on' => 'date',
+            'finished_on' => 'date',
+            'technologies' => 'json',
+            'description' => 'jsonb',
+            'created_at' => 'timestamp',
+            'updated_at' => 'timestamp',
+        ]);
+        $this->assertFalse(Schema::hasColumn('profile_projects', 'user_id'));
+        $this->assertTrue($this->hasIndexOn('profile_projects', ['work_experience_id', 'started_on']));
+        $this->assertSame(
+            ['finished_on', 'description'],
+            $this->nullableColumns('profile_projects', ['work_experience_id', 'name', 'started_on', 'finished_on', 'technologies', 'description']),
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testProfileProjectsAreDeletedWithWorkExperience(): void
+    {
+        $user = User::factory()->createOne();
+        $workExperienceId = $this->insertWorkExperience($user->id);
+        $this->insertProject($workExperienceId);
+
+        DB::table('profile_work_experiences')->where('id', $workExperienceId)->delete();
+
+        $this->assertDatabaseCount('profile_projects', 0);
+    }
+
+    /**
+     * @return void
+     */
+    public function testProfileProjectsAreDeletedWithUser(): void
+    {
+        $user = User::factory()->createOne();
+        $this->insertProject($this->insertWorkExperience($user->id));
+
+        $user->delete();
+
+        $this->assertDatabaseCount('profile_projects', 0);
+    }
+
+    /**
+     * @param int $userId
+     *
+     * @return int
+     */
+    private function insertWorkExperience(int $userId): int
+    {
+        return DB::table('profile_work_experiences')->insertGetId([
+            'user_id' => $userId,
+            'type' => 'company',
+            'company_name' => '{"uk": "VARTEQ Inc."}',
+            'role' => '{"uk": "Junior розробник"}',
+            'started_on' => '2020-08-29',
+        ]);
+    }
+
+    /**
+     * @param int $workExperienceId
+     *
+     * @return void
+     */
+    private function insertProject(int $workExperienceId): void
+    {
+        DB::table('profile_projects')->insert([
+            'work_experience_id' => $workExperienceId,
+            'name' => '{"uk": "Аукціон з продажу автомобілів"}',
+            'started_on' => '2020-08-29',
+            'technologies' => '["PostgreSQL"]',
+        ]);
+    }
+
+    /**
      * @param string $table
      * @param list<string> $columns
      *
