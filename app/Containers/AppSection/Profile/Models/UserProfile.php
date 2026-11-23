@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property Collection<int, ProfileEducation> $educations
  * @property Collection<int, ProfileLanguage> $languages
  * @property Collection<int, ProfileSkillGroup> $skillGroups
+ * @property Collection<int, ProfileWorkExperience> $workExperiences
  *
  * @method static UserProfileFactory<self> factory(int|null $count = null, array<string, mixed> $state = [])
  */
@@ -93,5 +94,15 @@ final class UserProfile extends ParentModel
     public function skillGroups(): HasMany
     {
         return $this->hasMany(ProfileSkillGroup::class, 'user_id', 'user_id')->orderBy('sort');
+    }
+
+    /**
+     * @return HasMany<ProfileWorkExperience, $this>
+     */
+    public function workExperiences(): HasMany
+    {
+        return $this->hasMany(ProfileWorkExperience::class, 'user_id', 'user_id')
+            ->orderByDesc('started_on')
+            ->orderByDesc('id');
     }
 }

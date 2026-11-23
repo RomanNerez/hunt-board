@@ -32,6 +32,14 @@ final class ProfileClusterTest extends FunctionalTestCase
     /**
      * @return void
      */
+    public function testGuestIsRedirectedToLoginFromWorkExperience(): void
+    {
+        $this->get('/admin/profile/work-experience')->assertRedirect(url('/admin/login'));
+    }
+
+    /**
+     * @return void
+     */
     public function testClusterEntryOpensGeneralPage(): void
     {
         $this->actingAs(User::factory()->createOne());
@@ -61,7 +69,7 @@ final class ProfileClusterTest extends FunctionalTestCase
 
         $this->assertContains('Профіль', $labels);
 
-        foreach (['Загальне', 'Навички', 'Посилання', 'Освіта', 'Мови'] as $page) {
+        foreach (['Загальне', 'Досвід роботи', 'Навички', 'Посилання', 'Освіта', 'Мови'] as $page) {
             $this->assertNotContains($page, $labels);
         }
     }

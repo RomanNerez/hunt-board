@@ -3,6 +3,8 @@
 namespace App\Containers\AppSection\Profile\Tests\Unit\Data\Migrations;
 
 use App\Containers\AppSection\Profile\Tests\UnitTestCase;
+use App\Containers\AppSection\User\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\CoversNothing;
 
@@ -102,6 +104,46 @@ final class MigrationTest extends UnitTestCase
     }
 
     /**
+     * @return void
+     */
+    public function testProfileWorkExperiencesTableHasExpectedColumns(): void
+    {
+        $this->assertDatabaseTable('profile_work_experiences', [
+            'id' => 'int8',
+            'user_id' => 'int8',
+            'type' => 'varchar',
+            'company_name' => 'jsonb',
+            'role' => 'jsonb',
+            'started_on' => 'date',
+            'finished_on' => 'date',
+            'created_at' => 'timestamp',
+            'updated_at' => 'timestamp',
+        ]);
+        $this->assertFalse(Schema::hasColumn('profile_work_experiences', 'sort'));
+        $this->assertTrue($this->hasIndexOn('profile_work_experiences', ['user_id', 'started_on']));
+        $this->assertSame(['finished_on'], $this->nullableColumns('profile_work_experiences', ['type', 'company_name', 'role', 'started_on', 'finished_on']));
+    }
+
+    /**
+     * @return void
+     */
+    public function testProfileWorkExperiencesAreDeletedWithUser(): void
+    {
+        $user = User::factory()->createOne();
+        DB::table('profile_work_experiences')->insert([
+            'user_id' => $user->id,
+            'type' => 'company',
+            'company_name' => '{"uk": "MacPaw"}',
+            'role' => '{"uk": "PHP-розробник"}',
+            'started_on' => '2021-03-01',
+        ]);
+
+        $user->delete();
+
+        $this->assertDatabaseCount('profile_work_experiences', 0);
+    }
+
+    /**
      * @param string $table
      * @param list<string> $columns
      *
@@ -116,5 +158,41 @@ final class MigrationTest extends UnitTestCase
         }
 
         return false;
+    }
+
+    /**
+     * @param string $table
+     * @param list<string> $columns
+     *
+     * @return bool
+     */
+    private function hasIndexOn(string $table, array $columns): bool
+    {
+        foreach (Schema::getIndexes($table) as $index) {
+            if ($index['columns'] === $columns) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param string $table
+     * @param list<string> $columns
+     *
+     * @return list<string>
+     */
+    private function nullableColumns(string $table, array $columns): array
+    {
+        $nullable = [];
+
+        foreach (Schema::getColumns($table) as $column) {
+            if ($column['nullable'] && in_array($column['name'], $columns, true)) {
+                $nullable[] = $column['name'];
+            }
+        }
+
+        return $nullable;
     }
 }

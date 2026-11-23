@@ -6,6 +6,7 @@ use App\Containers\AppSection\Profile\Models\ProfileEducation;
 use App\Containers\AppSection\Profile\Models\ProfileLanguage;
 use App\Containers\AppSection\Profile\Models\ProfileLink;
 use App\Containers\AppSection\Profile\Models\ProfileSkillGroup;
+use App\Containers\AppSection\Profile\Models\ProfileWorkExperience;
 use App\Containers\AppSection\Profile\Models\UserProfile;
 use App\Containers\AppSection\Profile\Tests\UnitTestCase;
 use App\Containers\AppSection\User\Models\User;
@@ -39,6 +40,20 @@ final class UserProfileTest extends UnitTestCase
     /**
      * @return void
      */
+    public function testWorkExperiencesBelongToProfileUserFromNewestStart(): void
+    {
+        $profile = UserProfile::factory()->createOne();
+        ProfileWorkExperience::factory()->createOne(['user_id' => $profile->user_id, 'company_name' => 'SoftServe', 'started_on' => '2019-03-01']);
+        ProfileWorkExperience::factory()->current()->createOne(['user_id' => $profile->user_id, 'company_name' => 'Grammarly', 'started_on' => '2024-09-01']);
+        ProfileWorkExperience::factory()->createOne(['user_id' => $profile->user_id, 'company_name' => 'MacPaw', 'started_on' => '2019-03-01']);
+        ProfileWorkExperience::factory()->createOne(['company_name' => 'Чуже', 'started_on' => '2025-01-01']);
+
+        $this->assertSame(['Grammarly', 'MacPaw', 'SoftServe'], $profile->workExperiences()->pluck('company_name')->all());
+    }
+
+    /**
+     * @return void
+     */
     public function testDeletingUserRemovesWholeProfile(): void
     {
         $user = User::factory()->createOne();
@@ -48,10 +63,11 @@ final class UserProfileTest extends UnitTestCase
         ProfileEducation::factory()->createOne(['user_id' => $user->id]);
         ProfileLanguage::factory()->createOne(['user_id' => $user->id]);
         ProfileSkillGroup::factory()->createOne(['user_id' => $user->id]);
+        ProfileWorkExperience::factory()->createOne(['user_id' => $user->id]);
 
         $user->delete();
 
-        foreach ([UserProfile::class, ProfileLink::class, ProfileEducation::class, ProfileLanguage::class, ProfileSkillGroup::class] as $model) {
+        foreach ([UserProfile::class, ProfileLink::class, ProfileEducation::class, ProfileLanguage::class, ProfileSkillGroup::class, ProfileWorkExperience::class] as $model) {
             $this->assertDatabaseMissing($model, ['user_id' => $user->id]);
         }
 

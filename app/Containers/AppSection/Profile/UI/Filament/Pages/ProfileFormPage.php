@@ -2,12 +2,11 @@
 
 namespace App\Containers\AppSection\Profile\UI\Filament\Pages;
 
-use App\Containers\AppSection\Profile\Enums\ProfileLocale;
 use App\Containers\AppSection\Profile\UI\Filament\Clusters\Profile\ProfileCluster;
+use App\Containers\AppSection\Profile\UI\Filament\Concerns\InteractsWithDataLocale;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Clusters\Cluster;
-use Filament\Forms\Components\Field;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Actions;
@@ -15,13 +14,14 @@ use Filament\Schemas\Components\EmbeddedSchema;
 use Filament\Schemas\Components\Form;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
 
 /**
  * @property Schema $form
  */
 abstract class ProfileFormPage extends Page
 {
+    use InteractsWithDataLocale;
+
     /**
      * @var class-string<Cluster>|null
      */
@@ -31,11 +31,6 @@ abstract class ProfileFormPage extends Page
      * @var array<string, mixed>|null
      */
     public array|null $data = [];
-
-    /**
-     * @var string
-     */
-    public string $dataLocale = ProfileLocale::Ukrainian->value;
 
     /**
      * @return void
@@ -69,102 +64,7 @@ abstract class ProfileFormPage extends Page
      */
     protected function getHeaderActions(): array
     {
-        return [
-            ActionGroup::make(array_map(
-                fn (ProfileLocale $locale): Action => Action::make("dataLocale_{$locale->value}")
-                    ->label($locale->getLabel())
-                    ->color(fn (): string => $this->dataLocale === $locale->value ? 'primary' : 'gray')
-                    ->action(function () use ($locale): void {
-                        $this->dataLocale = $locale->value;
-                    }),
-                ProfileLocale::cases(),
-            ))->buttonGroup(),
-        ];
-    }
-
-    /**
-     * @param string $name
-     * @param \Closure(string, ProfileLocale): Field $field
-     * @param bool $required
-     *
-     * @return list<Field>
-     */
-    protected function translatable(string $name, \Closure $field, bool $required = false): array
-    {
-        return array_map(
-            static fn (ProfileLocale $locale): Field => $field("{$name}.{$locale->value}", $locale)
-                ->required($required && $locale->isPrimary())
-                ->visibleJs("\$wire.dataLocale === '{$locale->value}'"),
-            ProfileLocale::cases(),
-        );
-    }
-
-    /**
-     * @param ValidationException $exception
-     *
-     * @return void
-     */
-    protected function onValidationError(ValidationException $exception): void
-    {
-        parent::onValidationError($exception);
-
-        $firstErrorKey = (string) array_key_first($exception->errors());
-
-        foreach (ProfileLocale::cases() as $locale) {
-            if (str_ends_with($firstErrorKey, ".{$locale->value}")) {
-                $this->dataLocale = $locale->value;
-
-                return;
-            }
-        }
-    }
-
-    /**
-     * @return ProfileLocale
-     */
-    protected function activeDataLocale(): ProfileLocale
-    {
-        return ProfileLocale::tryFrom($this->dataLocale) ?? ProfileLocale::primary();
-    }
-
-    /**
-     * @param array<array-key, mixed> $translations
-     *
-     * @return array<string, string|null>
-     */
-    protected static function localeValues(array $translations): array
-    {
-        $values = [];
-
-        foreach (ProfileLocale::cases() as $locale) {
-            $value = $translations[$locale->value] ?? null;
-            $values[$locale->value] = is_string($value) ? $value : null;
-        }
-
-        return $values;
-    }
-
-    /**
-     * @param mixed $translations
-     * @param ProfileLocale $locale
-     *
-     * @return string|null
-     */
-    protected static function translationWithFallback(mixed $translations, ProfileLocale $locale): string|null
-    {
-        if (!is_array($translations)) {
-            return null;
-        }
-
-        foreach ([$locale, ProfileLocale::primary()] as $candidate) {
-            $text = $translations[$candidate->value] ?? null;
-
-            if (is_string($text) && '' !== trim($text)) {
-                return $text;
-            }
-        }
-
-        return null;
+        return [$this->dataLocaleActionGroup()];
     }
 
     /**
