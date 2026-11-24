@@ -4,7 +4,6 @@ namespace App\Containers\AppSection\Contact\UI\Filament\Resources\Contacts\Schem
 
 use App\Containers\AppSection\VacancySource\UI\Filament\Resources\VacancySources\Schemas\VacancySourcesRepeater;
 use Filament\Forms\Components\TextInput;
-use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
 final class ContactForm
@@ -23,11 +22,7 @@ final class ContactForm
                     ->required()
                     ->maxLength(255)
                     ->columnSpanFull(),
-                Section::make('Джерела')
-                    ->schema([
-                        VacancySourcesRepeater::make(),
-                    ])
-                    ->columnSpanFull(),
+                VacancySourcesRepeater::make(),
             ])
             ->columns(1);
     }

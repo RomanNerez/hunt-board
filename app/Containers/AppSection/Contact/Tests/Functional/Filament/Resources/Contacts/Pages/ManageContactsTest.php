@@ -145,6 +145,21 @@ final class ManageContactsTest extends FunctionalTestCase
     /**
      * @return void
      */
+    public function testCreateFormShowsSourcesRightUnderNameWithoutSection(): void
+    {
+        Livewire::test(ManageContacts::class)
+            ->mountAction(TestAction::make('create'))
+            ->assertSchemaComponentExists('name')
+            ->assertSchemaComponentExists(
+                'sources',
+                checkComponentUsing: static fn (Repeater $repeater): bool => null === $repeater->getContainer()->getParentComponent()
+                    && 'Додати джерело' === $repeater->getAddActionLabel(),
+            );
+    }
+
+    /**
+     * @return void
+     */
     public function testCreatesContactWithNameOnly(): void
     {
         Livewire::test(ManageContacts::class)
