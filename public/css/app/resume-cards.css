@@ -1,0 +1,60 @@
+.hb-resume-cards .fi-ta-ctn {
+    overflow: visible;
+    border-radius: 0;
+    background-color: transparent;
+    box-shadow: none;
+}
+
+.hb-resume-cards .fi-ta-content-ctn {
+    overflow: visible;
+}
+
+.hb-resume-cards .fi-ta-content-ctn .fi-ta-content.fi-ta-content-grid {
+    padding: 0;
+}
+
+.hb-resume-cards .fi-ta-content-ctn .fi-ta-content.fi-ta-content-grid .fi-ta-record:not(.fi-selected),
+.hb-resume-cards .fi-ta-ctn .fi-pagination,
+.hb-resume-cards .fi-ta-ctn .fi-ta-empty-state {
+    border: 0;
+    border-radius: var(--radius-xl);
+    background-color: var(--color-white);
+    box-shadow:
+        0 1px 3px 0 #0000001a,
+        0 1px 2px -1px #0000001a,
+        0 0 0 1px color-mix(in oklab, var(--gray-950) 5%, transparent);
+}
+
+.hb-resume-cards .fi-ta-ctn .fi-pagination {
+    margin-top: calc(var(--spacing) * 4);
+}
+
+.dark .hb-resume-cards .fi-ta-content-ctn .fi-ta-content.fi-ta-content-grid .fi-ta-record:not(.fi-selected),
+.dark .hb-resume-cards .fi-ta-ctn .fi-pagination,
+.dark .hb-resume-cards .fi-ta-ctn .fi-ta-empty-state {
+    background-color: var(--gray-900);
+    box-shadow: 0 0 0 1px color-mix(in oklab, var(--color-white) 10%, transparent);
+}
+
+.hb-resume-cards .fi-ta-content-ctn .fi-ta-record .fi-ta-record-content-ctn {
+    flex-direction: row;
+    align-items: flex-start;
+}
+
+.hb-resume-cards .fi-ta-content-ctn .fi-ta-record .fi-ta-record-content-ctn > div:first-child {
+    flex: 1 1 0%;
+    min-width: 0;
+}
+
+.hb-resume-cards .fi-ta-content-ctn .fi-ta-record .fi-ta-actions {
+    flex-wrap: nowrap;
+    gap: calc(var(--spacing) * 1);
+    align-items: center;
+    height: 1.75rem;
+    padding-inline-start: 0;
+}
+
+.hb-resume-cards .fi-ta-record-content .fi-ta-split {
+    align-items: center;
+    min-height: 1.75rem;
+}

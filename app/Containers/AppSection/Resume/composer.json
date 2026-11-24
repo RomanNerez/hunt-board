@@ -1,0 +1,6 @@
+{
+    "name": "apiato/resume",
+    "description": "Resume Container",
+    "type": "apiato-container",
+    "require": {}
+}
