@@ -23,7 +23,7 @@ final class UpdateVacancyActionTest extends UnitTestCase
         $result = app(UpdateVacancyAction::class)->run($vacancy->id, ['status_id' => $interview->id]);
 
         $this->assertTrue($result->relationLoaded('company'));
-        $this->assertTrue($result->relationLoaded('vacancySource'));
+        $this->assertTrue($result->relationLoaded('vacancySources'));
         $this->assertSame('Interview', $result->status->name);
         $this->assertDatabaseHas(Vacancy::class, ['id' => $vacancy->id, 'status_id' => $interview->id]);
     }

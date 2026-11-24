@@ -20,7 +20,6 @@ final class VacancyFactoryTest extends UnitTestCase
         $this->assertNotSame('', $vacancy->title);
         $this->assertNotNull($vacancy->company);
         $this->assertNotNull($vacancy->status);
-        $this->assertNull($vacancy->vacancy_source_id);
         $this->assertNull($vacancy->salary_min);
         $this->assertNull($vacancy->currency);
     }

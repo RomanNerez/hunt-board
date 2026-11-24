@@ -16,6 +16,7 @@ use App\Containers\AppSection\Vacancy\UI\Filament\Resources\Vacancies\Tables\Vac
 use App\Containers\AppSection\Vacancy\UI\Filament\Resources\Vacancies\VacancyResource;
 use App\Containers\AppSection\VacancySource\Models\VacancySource;
 use Filament\Actions\Testing\TestAction;
+use Filament\Forms\Components\Repeater;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -28,12 +29,18 @@ use PHPUnit\Framework\Attributes\DataProvider;
 final class ListVacanciesTest extends FunctionalTestCase
 {
     /**
+     * @var \Closure
+     */
+    private \Closure $undoRepeaterFake;
+
+    /**
      * @return void
      */
     protected function setUp(): void
     {
         parent::setUp();
 
+        $this->undoRepeaterFake = Repeater::fake();
         Storage::fake('public');
         $this->actingAs(User::factory()->createOne());
     }
@@ -41,27 +48,66 @@ final class ListVacanciesTest extends FunctionalTestCase
     /**
      * @return void
      */
-    public function testTableShowsVacanciesWithCompaniesStatusBadgesAndSalary(): void
+    protected function tearDown(): void
+    {
+        ($this->undoRepeaterFake)();
+
+        parent::tearDown();
+    }
+
+    /**
+     * @return void
+     */
+    public function testTableShowsVacanciesWithCompaniesAndStatusBadges(): void
     {
         $macPaw = Company::factory()->createOne(['name' => 'MacPaw']);
         $grammarly = Company::factory()->createOne(['name' => 'Grammarly']);
         $applied = Status::factory()->createOne(['name' => 'Applied', 'color' => StatusColor::BLUE]);
         $offer = Status::factory()->createOne(['name' => 'Offer', 'color' => StatusColor::GREEN]);
-        $php = Vacancy::factory()->createOne([
-            'title' => 'PHP Developer',
-            'company_id' => $macPaw->id,
-            'status_id' => $applied->id,
-            'salary_min' => 4000,
-            'salary_max' => 5500,
-            'currency' => Currency::USD,
-        ]);
+        $php = Vacancy::factory()->createOne(['title' => 'PHP Developer', 'company_id' => $macPaw->id, 'status_id' => $applied->id]);
         $qa = Vacancy::factory()->createOne(['title' => 'QA Engineer', 'company_id' => $grammarly->id, 'status_id' => $offer->id]);
 
         Livewire::test(ListVacancies::class)
             ->assertCanSeeTableRecords([$php, $qa])
-            ->assertSee(['MacPaw', 'Grammarly', '4 000–5 500 USD'])
+            ->assertSee(['MacPaw', 'Grammarly'])
             ->assertSeeHtml(StatusColor::BLUE->renderBadge('Applied')->toHtml())
             ->assertSeeHtml(StatusColor::GREEN->renderBadge('Offer')->toHtml());
+    }
+
+    /**
+     * @return void
+     */
+    public function testTableShowsAllVacancySources(): void
+    {
+        $vacancy = Vacancy::factory()
+            ->hasAttached(VacancySource::factory()->state(['name' => 'DOU']))
+            ->hasAttached(VacancySource::factory()->state(['name' => 'LinkedIn']))
+            ->createOne(['title' => 'PHP Developer']);
+
+        Livewire::test(ListVacancies::class)
+            ->assertCanSeeTableRecords([$vacancy])
+            ->assertTableColumnStateSet('vacancySources.name', ['DOU', 'LinkedIn'], $vacancy)
+            ->assertSee(['DOU', 'LinkedIn']);
+    }
+
+    /**
+     * @return void
+     */
+    public function testTableHasNoWorkFormatSalaryAndNextActionColumns(): void
+    {
+        Vacancy::factory()->createOne([
+            'work_format' => WorkFormat::HYBRID,
+            'salary_min' => 4000,
+            'salary_max' => 5500,
+            'currency' => Currency::USD,
+            'next_action_at' => '2026-11-25 10:00:00',
+        ]);
+
+        Livewire::test(ListVacancies::class)
+            ->assertTableColumnDoesNotExist('work_format')
+            ->assertTableColumnDoesNotExist('salary')
+            ->assertTableColumnDoesNotExist('next_action_at')
+            ->assertDontSee(['4 000–5 500 USD', '25.11.2026 10:00']);
     }
 
     /**
@@ -123,6 +169,26 @@ final class ListVacanciesTest extends FunctionalTestCase
     /**
      * @return void
      */
+    public function testFiltersByOneOfSeveralVacancySources(): void
+    {
+        $linkedIn = VacancySource::factory()->createOne(['name' => 'LinkedIn']);
+        $php = Vacancy::factory()
+            ->hasAttached(VacancySource::factory()->state(['name' => 'DOU']))
+            ->hasAttached($linkedIn)
+            ->createOne(['title' => 'PHP Developer']);
+        $qa = Vacancy::factory()
+            ->hasAttached(VacancySource::factory()->state(['name' => 'Djinni']))
+            ->createOne(['title' => 'QA Engineer']);
+
+        Livewire::test(ListVacancies::class)
+            ->filterTable('vacancySources', $linkedIn->id)
+            ->assertCanSeeTableRecords([$php])
+            ->assertCanNotSeeTableRecords([$qa]);
+    }
+
+    /**
+     * @return void
+     */
     public function testFiltersByWorkFormat(): void
     {
         $remote = Vacancy::factory()->createOne(['work_format' => WorkFormat::REMOTE]);
@@ -156,15 +222,12 @@ final class ListVacanciesTest extends FunctionalTestCase
     {
         $macPaw = Company::factory()->createOne(['name' => 'MacPaw']);
         $applied = Status::factory()->createOne(['name' => 'Applied']);
-        $dou = VacancySource::factory()->createOne(['name' => 'DOU']);
 
         $component = Livewire::test(ListVacancies::class)
             ->callAction(TestAction::make('create'), data: [
                 ...$this->validData(),
-                'vacancy_source_id' => $dou->id,
                 'company_id' => $macPaw->id,
                 'status_id' => $applied->id,
-                'url' => 'https://jobs.dou.ua/companies/macpaw/vacancies/123/',
                 'work_format' => WorkFormat::REMOTE->value,
                 'salary_min' => 4000,
                 'salary_max' => 5500,
@@ -175,9 +238,72 @@ final class ListVacanciesTest extends FunctionalTestCase
         $vacancy = Vacancy::query()->where('title', 'Senior PHP Developer')->firstOrFail();
 
         $component->assertRedirect(VacancyResource::getUrl('view', ['record' => $vacancy]));
-        $this->assertSame($dou->id, $vacancy->vacancy_source_id);
         $this->assertSame(WorkFormat::REMOTE, $vacancy->work_format);
         $this->assertSame(5500, $vacancy->salary_max);
+        $this->assertDatabaseMissing('vacancy_vacancy_source', ['vacancy_id' => $vacancy->id]);
+    }
+
+    /**
+     * @return void
+     */
+    public function testCreatesVacancyWithTwoSourcesAndTheirLinks(): void
+    {
+        $dou = VacancySource::factory()->createOne(['name' => 'DOU']);
+        $linkedIn = VacancySource::factory()->createOne(['name' => 'LinkedIn']);
+
+        Livewire::test(ListVacancies::class)
+            ->callAction(TestAction::make('create'), data: [
+                ...$this->validData(),
+                'sources' => [
+                    ['vacancy_source_id' => $dou->id, 'url' => 'https://jobs.dou.ua/vacancies/123/'],
+                    ['vacancy_source_id' => $linkedIn->id, 'url' => 'https://www.linkedin.com/jobs/view/456/'],
+                ],
+            ])
+            ->assertHasNoFormErrors();
+
+        $vacancy = Vacancy::query()->where('title', 'Senior PHP Developer')->firstOrFail();
+
+        $this->assertDatabaseCount('vacancy_vacancy_source', 2);
+        $this->assertDatabaseHas('vacancy_vacancy_source', ['vacancy_id' => $vacancy->id, 'vacancy_source_id' => $dou->id, 'url' => 'https://jobs.dou.ua/vacancies/123/']);
+        $this->assertDatabaseHas('vacancy_vacancy_source', ['vacancy_id' => $vacancy->id, 'vacancy_source_id' => $linkedIn->id, 'url' => 'https://www.linkedin.com/jobs/view/456/']);
+    }
+
+    /**
+     * @return void
+     */
+    public function testCreatesVacancySourceWithoutLink(): void
+    {
+        $dou = VacancySource::factory()->createOne(['name' => 'DOU']);
+
+        Livewire::test(ListVacancies::class)
+            ->callAction(TestAction::make('create'), data: [
+                ...$this->validData(),
+                'sources' => [['vacancy_source_id' => $dou->id, 'url' => '']],
+            ])
+            ->assertHasNoFormErrors();
+
+        $this->assertDatabaseHas('vacancy_vacancy_source', ['vacancy_source_id' => $dou->id, 'url' => null]);
+    }
+
+    /**
+     * @return void
+     */
+    public function testCreateRejectsDuplicateVacancySource(): void
+    {
+        $dou = VacancySource::factory()->createOne(['name' => 'DOU']);
+
+        Livewire::test(ListVacancies::class)
+            ->callAction(TestAction::make('create'), data: [
+                ...$this->validData(),
+                'sources' => [
+                    ['vacancy_source_id' => $dou->id, 'url' => 'https://jobs.dou.ua/vacancies/123/'],
+                    ['vacancy_source_id' => $dou->id, 'url' => null],
+                ],
+            ])
+            ->assertHasFormErrors(['sources.1.vacancy_source_id']);
+
+        $this->assertDatabaseCount(Vacancy::class, 0);
+        $this->assertDatabaseCount('vacancy_vacancy_source', 0);
     }
 
     /**
@@ -189,8 +315,7 @@ final class ListVacanciesTest extends FunctionalTestCase
             'empty title' => [['title' => ''], 'title'],
             'empty company' => [['company_id' => null], 'company_id'],
             'empty status' => [['status_id' => null], 'status_id'],
-            'url without scheme' => [['url' => 'dou.ua/vacancy/123'], 'url'],
-            'url with ftp scheme' => [['url' => 'ftp://example.com/vacancy'], 'url'],
+            'link without source' => [['sources' => [['vacancy_source_id' => null, 'url' => 'https://jobs.dou.ua/vacancies/123/']]], 'sources.0.vacancy_source_id'],
             'unknown work format' => [['work_format' => 'freelance'], 'work_format'],
             'negative salary' => [['salary_min' => -100, 'currency' => 'USD'], 'salary_min'],
             'salary without currency' => [['salary_min' => 3000], 'currency'],
@@ -210,6 +335,37 @@ final class ListVacanciesTest extends FunctionalTestCase
         Livewire::test(ListVacancies::class)
             ->callAction(TestAction::make('create'), data: [...$this->validData(), ...$data])
             ->assertHasFormErrors([$field]);
+
+        $this->assertDatabaseCount(Vacancy::class, 0);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function invalidSourceLinkProvider(): array
+    {
+        return [
+            'without scheme' => ['dou.ua/vacancy/123'],
+            'with ftp scheme' => ['ftp://example.com/vacancy'],
+        ];
+    }
+
+    /**
+     * @param string $url
+     *
+     * @return void
+     */
+    #[DataProvider('invalidSourceLinkProvider')]
+    public function testCreateRejectsInvalidSourceLink(string $url): void
+    {
+        $dou = VacancySource::factory()->createOne(['name' => 'DOU']);
+
+        Livewire::test(ListVacancies::class)
+            ->callAction(TestAction::make('create'), data: [
+                ...$this->validData(),
+                'sources' => [['vacancy_source_id' => $dou->id, 'url' => $url]],
+            ])
+            ->assertHasFormErrors(['sources.0.url']);
 
         $this->assertDatabaseCount(Vacancy::class, 0);
     }
@@ -281,12 +437,13 @@ final class ListVacanciesTest extends FunctionalTestCase
     {
         $component = Livewire::test(ListVacancies::class)
             ->mountAction(TestAction::make('create'))
-            ->callAction(TestAction::make('createOption')->schemaComponent('vacancy_source_id'), data: ['name' => 'Telegram'])
+            ->fillForm(['sources' => [['vacancy_source_id' => null, 'url' => null]]])
+            ->callAction(TestAction::make('createOption')->schemaComponent('sources.0.vacancy_source_id'), data: ['name' => 'Telegram'])
             ->assertHasNoFormErrors();
 
         $telegram = VacancySource::query()->where('name', 'Telegram')->firstOrFail();
 
-        $component->assertSchemaStateSet(['vacancy_source_id' => $telegram->id]);
+        $component->assertSchemaStateSet(['sources' => [['vacancy_source_id' => $telegram->id, 'url' => null]]]);
     }
 
     /**

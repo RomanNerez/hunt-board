@@ -11,16 +11,16 @@ use App\Containers\AppSection\VacancySource\Models\VacancySource;
 use App\Ship\Parents\Models\Model as ParentModel;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
 
 /**
  * @property int $id
  * @property int $company_id
  * @property int $status_id
- * @property int|null $vacancy_source_id
  * @property string $title
- * @property string|null $url
  * @property string|null $description
  * @property string|null $location
  * @property WorkFormat|null $work_format
@@ -34,7 +34,7 @@ use Illuminate\Support\Str;
  * @property CarbonImmutable|null $updated_at
  * @property Company $company
  * @property Status $status
- * @property VacancySource|null $vacancySource
+ * @property Collection<int, VacancySource> $vacancySources
  *
  * @method static VacancyFactory<self> factory(int|null $count = null, array<string, mixed> $state = [])
  */
@@ -43,7 +43,7 @@ final class Vacancy extends ParentModel
     /**
      * @var list<string>
      */
-    public const DISPLAY_RELATIONS = ['company', 'status', 'vacancySource'];
+    public const DISPLAY_RELATIONS = ['company', 'status', 'vacancySources'];
 
     /**
      * @var list<string>
@@ -51,9 +51,7 @@ final class Vacancy extends ParentModel
     protected $fillable = [
         'company_id',
         'status_id',
-        'vacancy_source_id',
         'title',
-        'url',
         'description',
         'location',
         'work_format',
@@ -94,11 +92,14 @@ final class Vacancy extends ParentModel
     }
 
     /**
-     * @return BelongsTo<VacancySource, $this>
+     * @return BelongsToMany<VacancySource, $this>
      */
-    public function vacancySource(): BelongsTo
+    public function vacancySources(): BelongsToMany
     {
-        return $this->belongsTo(VacancySource::class);
+        return $this->belongsToMany(VacancySource::class)
+            ->withPivot('url')
+            ->withTimestamps()
+            ->orderByPivot('id');
     }
 
     /**

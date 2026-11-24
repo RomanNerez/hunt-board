@@ -4,6 +4,9 @@ namespace App\Containers\AppSection\Vacancy\UI\Filament\Resources\Vacancies\Sche
 
 use App\Containers\AppSection\Vacancy\Models\Vacancy;
 use App\Containers\AppSection\Vacancy\UI\Filament\Support\SalaryRangeFormatter;
+use App\Containers\AppSection\Vacancy\UI\Filament\Support\VacancySourceLink;
+use App\Containers\AppSection\VacancySource\Models\VacancySource;
+use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -29,13 +32,6 @@ final class VacancyInfolist
                         TextEntry::make('status.name')
                             ->label('Статус')
                             ->formatStateUsing(static fn (Vacancy $record): HtmlString => $record->status->color->renderBadge($record->status->name)),
-                        TextEntry::make('vacancySource.name')
-                            ->label('Джерело')
-                            ->placeholder('—'),
-                        TextEntry::make('url')
-                            ->label('Посилання')
-                            ->url(static fn (Vacancy $record): string|null => $record->url, shouldOpenInNewTab: true)
-                            ->placeholder('—'),
                         TextEntry::make('location')
                             ->label('Локація')
                             ->placeholder('—'),
@@ -44,6 +40,11 @@ final class VacancyInfolist
                             ->placeholder('—'),
                     ])
                     ->columns(2)
+                    ->columnSpanFull(),
+                Section::make('Джерела')
+                    ->schema([
+                        self::sourcesEntry(),
+                    ])
                     ->columnSpanFull(),
                 Section::make('Умови')
                     ->schema([
@@ -82,6 +83,26 @@ final class VacancyInfolist
                     ])
                     ->columnSpanFull(),
             ]);
+    }
+
+    /**
+     * @return RepeatableEntry
+     */
+    private static function sourcesEntry(): RepeatableEntry
+    {
+        return RepeatableEntry::make('vacancySources')
+            ->label('Джерела')
+            ->hiddenLabel()
+            ->schema([
+                TextEntry::make('name')
+                    ->label('Джерело'),
+                TextEntry::make('pivot.url')
+                    ->label('Посилання')
+                    ->url(static fn (VacancySource $record): string|null => VacancySourceLink::url($record), shouldOpenInNewTab: true),
+            ])
+            ->columns(2)
+            ->placeholder('—')
+            ->columnSpanFull();
     }
 
     /**

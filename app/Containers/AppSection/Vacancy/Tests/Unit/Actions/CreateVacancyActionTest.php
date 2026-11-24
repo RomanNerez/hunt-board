@@ -31,13 +31,12 @@ final class CreateVacancyActionTest extends UnitTestCase
         $this->assertSame('Senior PHP Developer', $vacancy->title);
         $this->assertTrue($vacancy->relationLoaded('company'));
         $this->assertTrue($vacancy->relationLoaded('status'));
-        $this->assertTrue($vacancy->relationLoaded('vacancySource'));
+        $this->assertTrue($vacancy->relationLoaded('vacancySources'));
         $this->assertSame('MacPaw', $vacancy->company->name);
         $this->assertSame('Applied', $vacancy->status->name);
-        $this->assertNull($vacancy->vacancySource);
+        $this->assertCount(0, $vacancy->vacancySources);
         $this->assertDatabaseHas('vacancies', [
             'id' => $vacancy->id,
-            'url' => null,
             'description' => null,
             'work_format' => null,
             'salary_min' => null,
@@ -59,9 +58,8 @@ final class CreateVacancyActionTest extends UnitTestCase
         $vacancy = app(CreateVacancyAction::class)->run([
             'company_id' => $macPaw->id,
             'status_id' => $applied->id,
-            'vacancy_source_id' => $dou->id,
             'title' => 'Senior PHP Developer',
-            'url' => 'https://jobs.dou.ua/companies/macpaw/vacancies/123/',
+            'sources' => [['vacancy_source_id' => $dou->id, 'url' => 'https://jobs.dou.ua/companies/macpaw/vacancies/123/']],
             'description' => "Про проєкт.\n\nВимоги.",
             'location' => 'Київ',
             'work_format' => WorkFormat::HYBRID,
@@ -75,8 +73,8 @@ final class CreateVacancyActionTest extends UnitTestCase
 
         $vacancy->refresh();
 
-        $this->assertSame('DOU', $vacancy->vacancySource?->name);
-        $this->assertSame('https://jobs.dou.ua/companies/macpaw/vacancies/123/', $vacancy->url);
+        $this->assertSame(['DOU'], $vacancy->vacancySources->pluck('name')->all());
+        $this->assertDatabaseHas('vacancy_vacancy_source', ['vacancy_id' => $vacancy->id, 'vacancy_source_id' => $dou->id, 'url' => 'https://jobs.dou.ua/companies/macpaw/vacancies/123/']);
         $this->assertSame("Про проєкт.\n\nВимоги.", $vacancy->description);
         $this->assertSame('Київ', $vacancy->location);
         $this->assertSame(WorkFormat::HYBRID, $vacancy->work_format);

@@ -43,8 +43,6 @@ final class VacancyFactory extends ParentFactory
             $salaryMin = fake()->numberBetween(1, 5) * 1000;
 
             return [
-                'vacancy_source_id' => VacancySource::factory(),
-                'url' => fake()->url(),
                 'description' => fake()->paragraphs(2, true),
                 'location' => fake()->city(),
                 'work_format' => fake()->randomElement(WorkFormat::cases()),
@@ -55,6 +53,6 @@ final class VacancyFactory extends ParentFactory
                 'next_action_at' => fake()->dateTimeBetween('now', '+1 month'),
                 'notes' => fake()->sentence(),
             ];
-        });
+        })->hasAttached(VacancySource::factory()->count(2), static fn (): array => ['url' => fake()->url()]);
     }
 }

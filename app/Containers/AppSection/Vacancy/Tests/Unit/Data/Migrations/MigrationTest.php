@@ -20,9 +20,7 @@ final class MigrationTest extends UnitTestCase
             'id' => 'int8',
             'company_id' => 'int8',
             'status_id' => 'int8',
-            'vacancy_source_id' => 'int8',
             'title' => 'varchar',
-            'url' => 'varchar',
             'description' => 'text',
             'location' => 'varchar',
             'work_format' => 'varchar',
@@ -67,17 +65,5 @@ final class MigrationTest extends UnitTestCase
 
         $this->assertDatabaseHas('statuses', ['id' => $vacancy->status_id]);
         $this->assertModelExists($vacancy);
-    }
-
-    /**
-     * @return void
-     */
-    public function testDeletingVacancySourceKeepsVacancyWithoutSource(): void
-    {
-        $vacancy = Vacancy::factory()->complete()->createOne();
-
-        $vacancy->vacancySource()->delete();
-
-        $this->assertDatabaseHas(Vacancy::class, ['id' => $vacancy->id, 'vacancy_source_id' => null]);
     }
 }
