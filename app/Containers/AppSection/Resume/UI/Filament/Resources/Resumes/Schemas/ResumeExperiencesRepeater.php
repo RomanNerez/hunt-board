@@ -22,6 +22,7 @@ final class ResumeExperiencesRepeater
     {
         return Repeater::make('experiences')
             ->label('Досвід роботи')
+            ->hiddenLabel()
             ->schema([
                 TextInput::make('company')
                     ->label('Компанія')

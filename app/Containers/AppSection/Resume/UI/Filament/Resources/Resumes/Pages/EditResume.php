@@ -3,25 +3,33 @@
 namespace App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Pages;
 
 use App\Containers\AppSection\Resume\Actions\DeleteResumeAction;
-use App\Containers\AppSection\Resume\Actions\UpdateResumeAction;
 use App\Containers\AppSection\Resume\Models\Resume;
+use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Pages\Concerns\EditsResumeSection;
 use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\ResumeResource;
-use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Schemas\ResumeEducationsRepeater;
-use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Schemas\ResumeExperiencesRepeater;
-use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Schemas\ResumeLanguagesRepeater;
-use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Schemas\ResumeLinksRepeater;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
-use Illuminate\Database\Eloquent\Model;
+use Filament\Support\Icons\Heroicon;
 
 final class EditResume extends EditRecord
 {
+    use EditsResumeSection;
+
     /**
      * @var string
      */
     protected static string $resource = ResumeResource::class;
+
+    /**
+     * @var string|null
+     */
+    protected static string|null $navigationLabel = 'Загальне';
+
+    /**
+     * @var string|\BackedEnum|null
+     */
+    protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedUser;
 
     /**
      * @return array<Action|ActionGroup>
@@ -33,48 +41,5 @@ final class EditResume extends EditRecord
                 ->modalHeading('Видалити резюме')
                 ->using(static fn (Resume $record): bool => app(DeleteResumeAction::class)->run($record->id)),
         ];
-    }
-
-    /**
-     * @param array<string, mixed> $data
-     *
-     * @return array<string, mixed>
-     */
-    protected function mutateFormDataBeforeFill(array $data): array
-    {
-        /** @var Resume $resume */
-        $resume = $this->getRecord();
-
-        $data['links'] = ResumeLinksRepeater::stateFrom($resume->load('links')->links);
-        $data['experiences'] = ResumeExperiencesRepeater::stateFrom($resume->load('experiences.stacks')->experiences);
-        $data['educations'] = ResumeEducationsRepeater::stateFrom($resume->load('educations')->educations);
-        $data['languages'] = ResumeLanguagesRepeater::stateFrom($resume->load('languages')->languages);
-
-        return $data;
-    }
-
-    /**
-     * @param Model $record
-     * @param array<string, mixed> $data
-     *
-     * @return Model
-     */
-    protected function handleRecordUpdate(Model $record, array $data): Model
-    {
-        /** @var array<string, mixed> $attributes */
-        $attributes = $data;
-
-        /** @var int $id */
-        $id = $record->getKey();
-
-        return app(UpdateResumeAction::class)->run($id, $attributes);
-    }
-
-    /**
-     * @return string
-     */
-    protected function getRedirectUrl(): string
-    {
-        return ResumeResource::getUrl('index');
     }
 }

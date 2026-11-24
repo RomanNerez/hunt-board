@@ -18,14 +18,8 @@ final class ResumeForm
         return $schema
             ->columns(2)
             ->components([
-                TextInput::make('first_name')
-                    ->label('Імʼя')
-                    ->required()
-                    ->maxLength(255),
-                TextInput::make('last_name')
-                    ->label('Прізвище')
-                    ->required()
-                    ->maxLength(255),
+                self::firstNameInput(),
+                self::lastNameInput(),
                 TextInput::make('headline')
                     ->label('Заголовок')
                     ->maxLength(255)
@@ -34,10 +28,28 @@ final class ResumeForm
                     ->label('Короткий опис')
                     ->rows(6)
                     ->columnSpanFull(),
-                ResumeLinksRepeater::make(),
-                ResumeExperiencesRepeater::make(),
-                ResumeEducationsRepeater::make(),
-                ResumeLanguagesRepeater::make(),
             ]);
+    }
+
+    /**
+     * @return TextInput
+     */
+    public static function firstNameInput(): TextInput
+    {
+        return TextInput::make('first_name')
+            ->label('Імʼя')
+            ->required()
+            ->maxLength(255);
+    }
+
+    /**
+     * @return TextInput
+     */
+    public static function lastNameInput(): TextInput
+    {
+        return TextInput::make('last_name')
+            ->label('Прізвище')
+            ->required()
+            ->maxLength(255);
     }
 }

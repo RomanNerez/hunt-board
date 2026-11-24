@@ -4,8 +4,8 @@ namespace App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Tables;
 
 use App\Containers\AppSection\Resume\Actions\DeleteResumeAction;
 use App\Containers\AppSection\Resume\Models\Resume;
+use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Actions\CreateResumeModalAction;
 use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\ResumeResource;
-use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Support\Enums\FontWeight;
@@ -69,9 +69,7 @@ final class ResumesTable
             ->emptyStateDescription('Створіть основне резюме або версію під конкретну вакансію.')
             ->emptyStateIcon(Heroicon::OutlinedDocumentText)
             ->emptyStateActions([
-                CreateAction::make()
-                    ->label('Створити резюме')
-                    ->url(static fn (): string => ResumeResource::getUrl('create')),
+                CreateResumeModalAction::make(),
             ]);
     }
 

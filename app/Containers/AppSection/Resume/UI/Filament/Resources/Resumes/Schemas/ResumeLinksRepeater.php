@@ -19,6 +19,7 @@ final class ResumeLinksRepeater
     {
         return Repeater::make('links')
             ->label('Посилання')
+            ->hiddenLabel()
             ->schema([
                 Select::make('icon')
                     ->label('Іконка')

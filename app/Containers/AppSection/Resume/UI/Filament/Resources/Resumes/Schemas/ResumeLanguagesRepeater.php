@@ -20,6 +20,7 @@ final class ResumeLanguagesRepeater
     {
         return Repeater::make('languages')
             ->label('Мови')
+            ->hiddenLabel()
             ->schema([
                 TextInput::make('language')
                     ->label('Мова')

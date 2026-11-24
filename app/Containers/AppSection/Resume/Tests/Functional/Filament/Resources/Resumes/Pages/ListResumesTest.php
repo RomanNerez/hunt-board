@@ -76,15 +76,6 @@ final class ListResumesTest extends FunctionalTestCase
     /**
      * @return void
      */
-    public function testCreateButtonLeadsToCreatePage(): void
-    {
-        Livewire::test(ListResumes::class)
-            ->assertActionHasUrl('create', ResumeResource::getUrl('create'));
-    }
-
-    /**
-     * @return void
-     */
     public function testCardLinksAndEditActionLeadToEditPage(): void
     {
         $resume = Resume::factory()->createOne(['user_id' => $this->user->id]);

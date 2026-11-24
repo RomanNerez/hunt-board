@@ -19,6 +19,7 @@ final class ResumeEducationsRepeater
     {
         return Repeater::make('educations')
             ->label('Освіта')
+            ->hiddenLabel()
             ->schema([
                 TextInput::make('institution')
                     ->label('Навчальний заклад')

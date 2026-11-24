@@ -22,9 +22,20 @@ final class ResumeResourceTest extends FunctionalTestCase
     /**
      * @return void
      */
-    public function testHasIndexCreateAndEditPagesOnly(): void
+    public function testHasIndexAndSectionPagesWithoutCreate(): void
     {
-        $this->assertSame(['index', 'create', 'edit'], array_keys(ResumeResource::getPages()));
+        $this->assertSame(
+            ['index', 'edit', 'links', 'experiences', 'educations', 'languages'],
+            array_keys(ResumeResource::getPages()),
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testPanelWarnsAboutUnsavedChanges(): void
+    {
+        $this->assertTrue(filament()->hasUnsavedChangesAlerts());
     }
 
     /**
@@ -38,18 +49,23 @@ final class ResumeResourceTest extends FunctionalTestCase
 
         $this->assertSame(url('/admin/resumes'), ResumeResource::getUrl('index'));
         $this->get('/admin/resumes')->assertOk()->assertSee('Резюме');
-        $this->get('/admin/resumes/create')->assertOk();
-        $this->get("/admin/resumes/{$resume->id}/edit")->assertOk();
+        $this->get('/admin/resumes/create')->assertNotFound();
+
+        foreach (['edit', 'links', 'experiences', 'educations', 'languages'] as $section) {
+            $this->get("/admin/resumes/{$resume->id}/{$section}")->assertOk();
+        }
     }
 
     /**
      * @return void
      */
-    public function testEditingForeignResumeReturnsNotFound(): void
+    public function testForeignResumeSectionsReturnNotFound(): void
     {
         $foreign = Resume::factory()->createOne();
         $this->actingAs(User::factory()->createOne());
 
-        $this->get("/admin/resumes/{$foreign->id}/edit")->assertNotFound();
+        foreach (['edit', 'links', 'experiences', 'educations', 'languages'] as $section) {
+            $this->get("/admin/resumes/{$foreign->id}/{$section}")->assertNotFound();
+        }
     }
 }

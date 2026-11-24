@@ -35,6 +35,7 @@ final class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->unsavedChangesAlerts()
             ->brandName('Hunt Board')
             ->colors([
                 'primary' => Color::Indigo,
