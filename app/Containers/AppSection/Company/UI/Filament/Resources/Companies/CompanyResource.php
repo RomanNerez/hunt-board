@@ -26,6 +26,11 @@ final class CompanyResource extends Resource
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice2;
 
     /**
+     * @var int|null
+     */
+    protected static int|null $navigationSort = 20;
+
+    /**
      * @var string|null
      */
     protected static string|null $recordTitleAttribute = 'name';

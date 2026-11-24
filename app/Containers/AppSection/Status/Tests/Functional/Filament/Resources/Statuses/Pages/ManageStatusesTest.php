@@ -6,15 +6,21 @@ use App\Containers\AppSection\Status\Enums\StatusColor;
 use App\Containers\AppSection\Status\Models\Status;
 use App\Containers\AppSection\Status\Tests\FunctionalTestCase;
 use App\Containers\AppSection\Status\UI\Filament\Resources\Statuses\Pages\ManageStatuses;
+use App\Containers\AppSection\Status\UI\Filament\Resources\Statuses\Tables\StatusesTable;
 use App\Containers\AppSection\User\Models\User;
+use App\Containers\AppSection\Vacancy\Models\Vacancy;
 use Filament\Actions\Testing\TestAction;
 use Filament\Forms\Components\ToggleButtons;
+use Filament\Notifications\Livewire\Notifications;
+use Filament\Notifications\Notification;
+use Filament\Notifications\NotificationMailbox;
 use Filament\Schemas\Components\Html;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 #[CoversClass(ManageStatuses::class)]
+#[CoversClass(StatusesTable::class)]
 final class ManageStatusesTest extends FunctionalTestCase
 {
     /**
@@ -89,6 +95,64 @@ final class ManageStatusesTest extends FunctionalTestCase
         $this->assertModelMissing($applied);
         $this->assertModelMissing($rejected);
         $this->assertModelExists($offer);
+    }
+
+    /**
+     * @return void
+     */
+    public function testDeletingStatusUsedByVacancyKeepsItAndNotifies(): void
+    {
+        $applied = Status::factory()->createOne(['name' => 'Applied']);
+        Vacancy::factory()->createOne(['title' => 'PHP Developer', 'status_id' => $applied->id]);
+
+        Livewire::test(ManageStatuses::class)
+            ->callAction(TestAction::make('delete')->table($applied));
+
+        $notifications = $this->sentNotifications();
+
+        $this->assertCount(1, $notifications);
+        $this->assertSame('Статус використовується вакансіями', $notifications[0]->getTitle());
+        $this->assertSame('danger', $notifications[0]->getStatus());
+        $this->assertModelExists($applied);
+    }
+
+    /**
+     * @return void
+     */
+    public function testBulkDeleteKeepsStatusesUsedByVacanciesAndWarns(): void
+    {
+        $applied = Status::factory()->createOne(['name' => 'Applied']);
+        $rejected = Status::factory()->createOne(['name' => 'Rejected']);
+        Vacancy::factory()->createOne(['title' => 'PHP Developer', 'status_id' => $applied->id]);
+
+        Livewire::test(ManageStatuses::class)
+            ->selectTableRecords([$applied, $rejected])
+            ->callAction(TestAction::make('delete')->table()->bulk());
+
+        $notifications = $this->sentNotifications();
+
+        $this->assertCount(1, $notifications);
+        $this->assertSame('warning', $notifications[0]->getStatus());
+        $this->assertStringContainsString('Частину статусів не видалено, бо їх використовують вакансії.', (string) $notifications[0]->getBody());
+        $this->assertModelMissing($rejected);
+        $this->assertModelExists($applied);
+    }
+
+    /**
+     * @return list<Notification>
+     */
+    private function sentNotifications(): array
+    {
+        app(NotificationMailbox::class)->flush();
+
+        $component = new Notifications();
+        $component->mount();
+        $component->pullNotifications();
+
+        /** @var list<Notification> $notifications */
+        $notifications = $component->notifications->values()->all();
+
+        return $notifications;
     }
 
     /**

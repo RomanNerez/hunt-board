@@ -64,14 +64,14 @@ final class StackResourceTest extends FunctionalTestCase
     /**
      * @return void
      */
-    public function testSubNavigationListsStatusesFirstThenCompanyTypesDomainsAndStacks(): void
+    public function testSubNavigationListsStatusesCompanyTypesDomainsStacksAndVacancySources(): void
     {
         $this->actingAs(User::factory()->createOne());
 
         /** @var ManageStacks $page */
         $page = Livewire::test(ManageStacks::class)->instance();
 
-        $this->assertSame(['Статуси', 'Типи компаній', 'Домени', 'Технології'], $this->navigationLabels($page->getCachedSubNavigation()));
+        $this->assertSame(['Статуси', 'Типи компаній', 'Домени', 'Технології', 'Джерела вакансій'], $this->navigationLabels($page->getCachedSubNavigation()));
     }
 
     /**
