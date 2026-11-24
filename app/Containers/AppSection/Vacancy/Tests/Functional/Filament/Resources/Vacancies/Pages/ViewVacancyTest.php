@@ -10,6 +10,7 @@ use App\Containers\AppSection\User\Models\User;
 use App\Containers\AppSection\Vacancy\Enums\Currency;
 use App\Containers\AppSection\Vacancy\Enums\WorkFormat;
 use App\Containers\AppSection\Vacancy\Models\Vacancy;
+use App\Containers\AppSection\Vacancy\Models\VacancyNote;
 use App\Containers\AppSection\Vacancy\Tests\FunctionalTestCase;
 use App\Containers\AppSection\Vacancy\UI\Filament\Resources\Vacancies\Pages\ViewVacancy;
 use App\Containers\AppSection\Vacancy\UI\Filament\Resources\Vacancies\Schemas\VacancyInfolist;
@@ -53,13 +54,13 @@ final class ViewVacancyTest extends FunctionalTestCase
     /**
      * @return void
      */
-    public function testSubNavigationHasActiveOverviewAndEditItems(): void
+    public function testSubNavigationHasActiveOverviewAndNotesItems(): void
     {
         $vacancy = Vacancy::factory()->createOne(['title' => 'PHP Developer']);
 
         $this->get(VacancyResource::getUrl('view', ['record' => $vacancy]))
             ->assertOk()
-            ->assertSeeInOrder(['fi-page-sub-navigation-tabs', 'aria-current="page"', 'Огляд'], false)
+            ->assertSeeInOrder(['fi-page-sub-navigation-tabs', 'aria-current="page"', 'Огляд', VacancyResource::getUrl('notes', ['record' => $vacancy]), 'Нотатки'], false)
             ->assertDontSee('fi-page-sub-navigation-sidebar', false)
             ->assertDontSee('Редагування');
     }
@@ -97,18 +98,20 @@ final class ViewVacancyTest extends FunctionalTestCase
                 'currency' => Currency::USD,
                 'applied_at' => '2026-11-20',
                 'next_action_at' => '2026-11-25 10:00:00',
-                'notes' => "Рекрутерка — Олена\nДзвінок у середу",
             ]);
 
-        Livewire::test(ViewVacancy::class, ['record' => $vacancy->id])
+        $page = Livewire::test(ViewVacancy::class, ['record' => $vacancy->id]);
+
+        $this->assertMatchesRegularExpression('/fi-section-header-heading"\s*>\s*Опис\s*</u', $page->html());
+        $this->assertDoesNotMatchRegularExpression('/fi-section-header-heading"\s*>\s*Нотатки\s*</u', $page->html());
+
+        $page
             ->assertSee(['Senior PHP Developer', 'MacPaw', 'DOU', 'Київ', 'Гібрид', '4 000–5 500 USD', '20.11.2026', '25.11.2026 10:00'])
             ->assertSeeHtml(StatusColor::BLUE->renderBadge('Applied')->toHtml())
             ->assertSeeHtml('href="https://jobs.dou.ua/companies/macpaw/vacancies/123/"')
             ->assertSeeHtml('target="_blank"')
             ->assertSeeHtml('<p>Ми шукаємо <strong>PHP</strong>-розробника</p><ul><li>Laravel</li></ul>')
-            ->assertDontSeeHtml('<script>alert(1)</script>')
-            ->assertSeeHtml('whitespace-pre-line')
-            ->assertSee("Рекрутерка — Олена\nДзвінок у середу", false);
+            ->assertDontSeeHtml('<script>alert(1)</script>');
     }
 
     /**
@@ -356,6 +359,23 @@ final class ViewVacancyTest extends FunctionalTestCase
         $this->assertModelMissing($vacancy);
         $this->assertModelExists($contact);
         $this->assertDatabaseMissing('contact_vacancy', ['contact_id' => $contact->id]);
+    }
+
+    /**
+     * @return void
+     */
+    public function testDeletingVacancyDeletesOnlyItsNotes(): void
+    {
+        $vacancy = Vacancy::factory()->createOne(['title' => 'PHP Developer']);
+        $notes = VacancyNote::factory()->count(2)->create(['vacancy_id' => $vacancy->id]);
+        $foreignNote = VacancyNote::factory()->createOne();
+
+        Livewire::test(ViewVacancy::class, ['record' => $vacancy->id])
+            ->callAction(TestAction::make('delete'));
+
+        $this->assertModelMissing($vacancy);
+        $notes->each(fn (VacancyNote $note) => $this->assertModelMissing($note));
+        $this->assertModelExists($foreignNote);
     }
 
     /**

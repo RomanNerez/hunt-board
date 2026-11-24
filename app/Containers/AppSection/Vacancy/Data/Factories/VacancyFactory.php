@@ -51,7 +51,6 @@ final class VacancyFactory extends ParentFactory
                 'currency' => fake()->randomElement(Currency::cases()),
                 'applied_at' => fake()->date(),
                 'next_action_at' => fake()->dateTimeBetween('now', '+1 month'),
-                'notes' => fake()->sentence(),
             ];
         })->hasAttached(VacancySource::factory()->count(2), static fn (): array => ['url' => fake()->url()]);
     }

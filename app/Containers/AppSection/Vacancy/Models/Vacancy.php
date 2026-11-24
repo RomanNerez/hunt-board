@@ -8,6 +8,7 @@ use App\Containers\AppSection\Status\Models\Status;
 use App\Containers\AppSection\Vacancy\Data\Factories\VacancyFactory;
 use App\Containers\AppSection\Vacancy\Enums\Currency;
 use App\Containers\AppSection\Vacancy\Enums\WorkFormat;
+use App\Containers\AppSection\Vacancy\Models\Concerns\SanitizesRichText;
 use App\Containers\AppSection\VacancySource\Models\VacancySource;
 use App\Ship\Parents\Models\Model as ParentModel;
 use Carbon\CarbonImmutable;
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
@@ -30,18 +31,20 @@ use Illuminate\Support\Str;
  * @property Currency|null $currency
  * @property CarbonImmutable|null $applied_at
  * @property CarbonImmutable|null $next_action_at
- * @property string|null $notes
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  * @property Company $company
  * @property Status $status
  * @property Collection<int, VacancySource> $vacancySources
  * @property Collection<int, Contact> $contacts
+ * @property Collection<int, VacancyNote> $notes
  *
  * @method static VacancyFactory<self> factory(int|null $count = null, array<string, mixed> $state = [])
  */
 final class Vacancy extends ParentModel
 {
+    use SanitizesRichText;
+
     /**
      * @var list<string>
      */
@@ -62,7 +65,6 @@ final class Vacancy extends ParentModel
         'currency',
         'applied_at',
         'next_action_at',
-        'notes',
     ];
 
     /**
@@ -116,29 +118,20 @@ final class Vacancy extends ParentModel
     }
 
     /**
+     * @return HasMany<VacancyNote, $this>
+     */
+    public function notes(): HasMany
+    {
+        return $this->hasMany(VacancyNote::class);
+    }
+
+    /**
      * @return Attribute<string|null, string|null>
      */
     protected function description(): Attribute
     {
         return Attribute::make(
-            set: static fn (string|null $value): string|null => self::sanitizeDescription($value),
+            set: static fn (string|null $value): string|null => self::sanitizeRichText($value),
         );
-    }
-
-    /**
-     * @param string|null $value
-     *
-     * @return string|null
-     */
-    private static function sanitizeDescription(string|null $value): string|null
-    {
-        if (null === $value) {
-            return null;
-        }
-
-        $html = trim(Str::sanitizeHtml($value));
-        $visibleText = trim(html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8'), " \t\n\r\0\x0B\u{A0}");
-
-        return '' === $visibleText ? null : $html;
     }
 }

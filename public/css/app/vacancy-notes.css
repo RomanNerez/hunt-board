@@ -1,0 +1,37 @@
+.hb-vacancy-notes .fi-ta-ctn {
+    overflow: visible;
+    border-radius: 0;
+    background-color: transparent;
+    box-shadow: none;
+}
+
+.hb-vacancy-notes .fi-ta-content-ctn {
+    overflow: visible;
+}
+
+.hb-vacancy-notes .fi-ta-content-ctn .fi-ta-content.fi-ta-content-grid {
+    padding: 0;
+}
+
+.hb-vacancy-notes .fi-ta-content-ctn .fi-ta-content.fi-ta-content-grid .fi-ta-record:not(.fi-selected),
+.hb-vacancy-notes .fi-ta-ctn .fi-pagination,
+.hb-vacancy-notes .fi-ta-ctn .fi-ta-empty-state {
+    border: 0;
+    border-radius: var(--radius-xl);
+    background-color: var(--color-white);
+    box-shadow:
+        0 1px 3px 0 #0000001a,
+        0 1px 2px -1px #0000001a,
+        0 0 0 1px color-mix(in oklab, var(--gray-950) 5%, transparent);
+}
+
+.hb-vacancy-notes .fi-ta-ctn .fi-pagination {
+    margin-top: calc(var(--spacing) * 4);
+}
+
+.dark .hb-vacancy-notes .fi-ta-content-ctn .fi-ta-content.fi-ta-content-grid .fi-ta-record:not(.fi-selected),
+.dark .hb-vacancy-notes .fi-ta-ctn .fi-pagination,
+.dark .hb-vacancy-notes .fi-ta-ctn .fi-ta-empty-state {
+    background-color: var(--gray-900);
+    box-shadow: 0 0 0 1px color-mix(in oklab, var(--color-white) 10%, transparent);
+}

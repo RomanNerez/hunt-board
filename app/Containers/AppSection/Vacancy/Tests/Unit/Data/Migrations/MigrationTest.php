@@ -29,7 +29,6 @@ final class MigrationTest extends UnitTestCase
             'currency' => 'varchar',
             'applied_at' => 'date',
             'next_action_at' => 'timestamp',
-            'notes' => 'text',
             'created_at' => 'timestamp',
             'updated_at' => 'timestamp',
         ]);
@@ -65,5 +64,21 @@ final class MigrationTest extends UnitTestCase
 
         $this->assertDatabaseHas('statuses', ['id' => $vacancy->status_id]);
         $this->assertModelExists($vacancy);
+    }
+
+    /**
+     * @return void
+     */
+    public function testVacancyNotesTableHasExpectedColumns(): void
+    {
+        $this->assertDatabaseTable('vacancy_notes', [
+            'id' => 'int8',
+            'vacancy_id' => 'int8',
+            'title' => 'varchar',
+            'body' => 'text',
+            'occurred_at' => 'timestamp',
+            'created_at' => 'timestamp',
+            'updated_at' => 'timestamp',
+        ]);
     }
 }

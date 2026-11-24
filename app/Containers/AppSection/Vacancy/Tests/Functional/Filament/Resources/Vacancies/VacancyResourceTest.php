@@ -36,9 +36,9 @@ final class VacancyResourceTest extends FunctionalTestCase
     /**
      * @return void
      */
-    public function testHasOnlyIndexAndViewPages(): void
+    public function testHasOnlyIndexViewAndNotesPages(): void
     {
-        $this->assertSame(['index', 'view'], array_keys(VacancyResource::getPages()));
+        $this->assertSame(['index', 'view', 'notes'], array_keys(VacancyResource::getPages()));
     }
 
     /**

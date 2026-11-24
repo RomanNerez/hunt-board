@@ -15,7 +15,6 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
@@ -95,7 +94,7 @@ final class VacancyForm
                     ])
                     ->columns(2)
                     ->columnSpanFull(),
-                Section::make('Опис і нотатки')
+                Section::make('Опис')
                     ->schema([
                         RichEditor::make('description')
                             ->label('Опис')
@@ -106,10 +105,6 @@ final class VacancyForm
                                 ['undo', 'redo'],
                             ])
                             ->fileAttachments(false)
-                            ->columnSpanFull(),
-                        Textarea::make('notes')
-                            ->label('Нотатки')
-                            ->rows(4)
                             ->columnSpanFull(),
                     ])
                     ->columnSpanFull(),

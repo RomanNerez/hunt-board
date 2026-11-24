@@ -4,6 +4,7 @@ namespace App\Containers\AppSection\Vacancy\UI\Filament\Resources\Vacancies;
 
 use App\Containers\AppSection\Vacancy\Models\Vacancy;
 use App\Containers\AppSection\Vacancy\UI\Filament\Resources\Vacancies\Pages\ListVacancies;
+use App\Containers\AppSection\Vacancy\UI\Filament\Resources\Vacancies\Pages\ManageVacancyNotes;
 use App\Containers\AppSection\Vacancy\UI\Filament\Resources\Vacancies\Pages\ViewVacancy;
 use App\Containers\AppSection\Vacancy\UI\Filament\Resources\Vacancies\Schemas\VacancyForm;
 use App\Containers\AppSection\Vacancy\UI\Filament\Resources\Vacancies\Schemas\VacancyInfolist;
@@ -128,6 +129,7 @@ final class VacancyResource extends Resource
     {
         return $page->generateNavigationItems([
             ViewVacancy::class,
+            ManageVacancyNotes::class,
         ]);
     }
 
@@ -139,6 +141,7 @@ final class VacancyResource extends Resource
         return [
             'index' => ListVacancies::route('/'),
             'view' => ViewVacancy::route('/{record}'),
+            'notes' => ManageVacancyNotes::route('/{record}/notes'),
         ];
     }
 }

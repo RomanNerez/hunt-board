@@ -42,7 +42,6 @@ final class CreateVacancyActionTest extends UnitTestCase
             'salary_min' => null,
             'currency' => null,
             'applied_at' => null,
-            'notes' => null,
         ]);
     }
 
@@ -68,7 +67,6 @@ final class CreateVacancyActionTest extends UnitTestCase
             'currency' => Currency::USD,
             'applied_at' => '2026-11-20',
             'next_action_at' => '2026-11-25 10:00:00',
-            'notes' => 'Рекрутерка — Олена',
         ]);
 
         $vacancy->refresh();
@@ -83,6 +81,5 @@ final class CreateVacancyActionTest extends UnitTestCase
         $this->assertSame(Currency::USD, $vacancy->currency);
         $this->assertSame('2026-11-20', $vacancy->applied_at?->toDateString());
         $this->assertSame('2026-11-25 10:00:00', $vacancy->next_action_at?->toDateTimeString());
-        $this->assertSame('Рекрутерка — Олена', $vacancy->notes);
     }
 }

@@ -82,11 +82,6 @@ final class VacancyInfolist
                             ->placeholder('—'),
                     ])
                     ->columnSpanFull(),
-                Section::make('Нотатки')
-                    ->schema([
-                        self::multilineEntry('notes', 'Нотатки'),
-                    ])
-                    ->columnSpanFull(),
             ]);
     }
 
@@ -136,20 +131,5 @@ final class VacancyInfolist
             ])
             ->placeholder('—')
             ->columnSpanFull();
-    }
-
-    /**
-     * @param string $name
-     * @param string $label
-     *
-     * @return TextEntry
-     */
-    private static function multilineEntry(string $name, string $label): TextEntry
-    {
-        return TextEntry::make($name)
-            ->label($label)
-            ->hiddenLabel()
-            ->extraAttributes(['class' => 'whitespace-pre-line'])
-            ->placeholder('—');
     }
 }
