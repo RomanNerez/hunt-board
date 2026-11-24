@@ -37,6 +37,7 @@ final class ResumeForm
                 ResumeLinksRepeater::make(),
                 ResumeExperiencesRepeater::make(),
                 ResumeEducationsRepeater::make(),
+                ResumeLanguagesRepeater::make(),
             ]);
     }
 }

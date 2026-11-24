@@ -9,6 +9,7 @@ use App\Containers\AppSection\Resume\Enums\ResumeKind;
 use App\Containers\AppSection\Resume\Models\Resume;
 use App\Containers\AppSection\Resume\Models\ResumeEducation;
 use App\Containers\AppSection\Resume\Models\ResumeExperience;
+use App\Containers\AppSection\Resume\Models\ResumeLanguage;
 use App\Containers\AppSection\Resume\Models\ResumeLink;
 use App\Containers\AppSection\Resume\Tests\UnitTestCase;
 use App\Containers\AppSection\Stack\Models\Stack;
@@ -247,6 +248,56 @@ final class ResumeActionsTest extends UnitTestCase
 
         try {
             app(UpdateResumeAction::class)->run($resume->id, ['first_name' => 'Нове', 'educations' => [['institution' => null]]]);
+            $this->fail('Exception expected');
+        } catch (QueryException) {
+        }
+
+        $this->assertSame('Старе', $resume->refresh()->first_name);
+    }
+
+    /**
+     * @return void
+     */
+    public function testCreateStoresLanguagesInOrder(): void
+    {
+        $user = User::factory()->createOne();
+
+        $resume = app(CreateResumeAction::class)->run($user->id, [
+            'first_name' => 'Роман',
+            'last_name' => 'Нерез',
+            'languages' => [
+                ['language' => 'Українська', 'level' => 'native'],
+                ['language' => 'Англійська', 'level' => 'b2'],
+            ],
+        ]);
+
+        $this->assertSame(['Українська', 'Англійська'], $resume->languages()->pluck('language')->all());
+    }
+
+    /**
+     * @return void
+     */
+    public function testUpdateReplacesLanguagesOnlyWhenKeyIsPresent(): void
+    {
+        $resume = Resume::factory()->createOne();
+        ResumeLanguage::factory()->createOne(['resume_id' => $resume->id, 'language' => 'Англійська']);
+
+        app(UpdateResumeAction::class)->run($resume->id, ['first_name' => 'Нове']);
+        $this->assertSame(['Англійська'], $resume->languages()->pluck('language')->all());
+
+        app(UpdateResumeAction::class)->run($resume->id, ['languages' => [['language' => 'Англійська', 'level' => 'c1']]]);
+        $this->assertSame(['c1'], $resume->languages()->get()->pluck('level.value')->all());
+    }
+
+    /**
+     * @return void
+     */
+    public function testUpdateRollsBackResumeWhenLanguagesFail(): void
+    {
+        $resume = Resume::factory()->createOne(['first_name' => 'Старе']);
+
+        try {
+            app(UpdateResumeAction::class)->run($resume->id, ['first_name' => 'Нове', 'languages' => [['language' => null]]]);
             $this->fail('Exception expected');
         } catch (QueryException) {
         }

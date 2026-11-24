@@ -5,9 +5,11 @@ namespace App\Containers\AppSection\Resume\Tests\Unit\Data;
 use App\Containers\AppSection\Resume\Models\Resume;
 use App\Containers\AppSection\Resume\Models\ResumeEducation;
 use App\Containers\AppSection\Resume\Models\ResumeExperience;
+use App\Containers\AppSection\Resume\Models\ResumeLanguage;
 use App\Containers\AppSection\Resume\Models\ResumeLink;
 use App\Containers\AppSection\Resume\Tests\UnitTestCase;
 use App\Containers\AppSection\User\Models\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 use PHPUnit\Framework\Attributes\CoversNothing;
 
 #[CoversNothing]
@@ -162,5 +164,55 @@ final class MigrationTest extends UnitTestCase
 
         $this->assertModelMissing($first);
         $this->assertModelMissing($second);
+    }
+
+    /**
+     * @return void
+     */
+    public function testResumeLanguagesTableHasExpectedColumns(): void
+    {
+        $this->assertDatabaseTable('resume_languages', [
+            'id' => 'int8',
+            'resume_id' => 'int8',
+            'language' => 'varchar',
+            'level' => 'varchar',
+            'level_label' => 'varchar',
+            'sort_order' => 'int4',
+            'is_visible' => 'bool',
+            'created_at' => 'timestamp',
+            'updated_at' => 'timestamp',
+        ]);
+    }
+
+    /**
+     * @return void
+     */
+    public function testLanguagesAreOrderedAndDeletedWithResume(): void
+    {
+        $resume = Resume::factory()->createOne();
+        $second = ResumeLanguage::factory()->createOne(['resume_id' => $resume->id, 'sort_order' => 1]);
+        $first = ResumeLanguage::factory()->createOne(['resume_id' => $resume->id, 'sort_order' => 0]);
+
+        $this->assertSame([$first->id, $second->id], $resume->languages()->pluck('id')->all());
+
+        $resume->delete();
+
+        $this->assertModelMissing($first);
+        $this->assertModelMissing($second);
+    }
+
+    /**
+     * @return void
+     */
+    public function testLanguageIsUniquePerResumeButNotAcrossResumes(): void
+    {
+        $resume = Resume::factory()->createOne();
+        ResumeLanguage::factory()->createOne(['resume_id' => $resume->id, 'language' => 'Англійська']);
+
+        ResumeLanguage::factory()->createOne(['language' => 'Англійська']);
+
+        $this->expectException(UniqueConstraintViolationException::class);
+
+        ResumeLanguage::factory()->createOne(['resume_id' => $resume->id, 'language' => 'Англійська']);
     }
 }

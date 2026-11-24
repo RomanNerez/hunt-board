@@ -5,6 +5,7 @@ namespace App\Containers\AppSection\Resume\Actions;
 use App\Containers\AppSection\Resume\Models\Resume;
 use App\Containers\AppSection\Resume\Tasks\ReplaceResumeEducationsTask;
 use App\Containers\AppSection\Resume\Tasks\ReplaceResumeExperiencesTask;
+use App\Containers\AppSection\Resume\Tasks\ReplaceResumeLanguagesTask;
 use App\Containers\AppSection\Resume\Tasks\ReplaceResumeLinksTask;
 use App\Containers\AppSection\Resume\Tasks\UpdateResumeTask;
 use App\Containers\AppSection\Stack\Tasks\SyncStacksTask;
@@ -20,6 +21,7 @@ final class UpdateResumeAction extends ParentAction
      * @param ReplaceResumeExperiencesTask $replaceResumeExperiencesTask
      * @param SyncStacksTask $syncStacksTask
      * @param ReplaceResumeEducationsTask $replaceResumeEducationsTask
+     * @param ReplaceResumeLanguagesTask $replaceResumeLanguagesTask
      */
     public function __construct(
         private readonly UpdateResumeTask $updateResumeTask,
@@ -27,6 +29,7 @@ final class UpdateResumeAction extends ParentAction
         private readonly ReplaceResumeExperiencesTask $replaceResumeExperiencesTask,
         private readonly SyncStacksTask $syncStacksTask,
         private readonly ReplaceResumeEducationsTask $replaceResumeEducationsTask,
+        private readonly ReplaceResumeLanguagesTask $replaceResumeLanguagesTask,
     ) {
     }
 
@@ -55,7 +58,12 @@ final class UpdateResumeAction extends ParentAction
         /** @var list<array<string, mixed>> $educations */
         $educations = Arr::pull($data, 'educations') ?? [];
 
-        return DB::transaction(function () use ($id, $data, $hasLinks, $links, $hasExperiences, $experiences, $hasEducations, $educations): Resume {
+        $hasLanguages = array_key_exists('languages', $data);
+
+        /** @var list<array<string, mixed>> $languages */
+        $languages = Arr::pull($data, 'languages') ?? [];
+
+        return DB::transaction(function () use ($id, $data, $hasLinks, $links, $hasExperiences, $experiences, $hasEducations, $educations, $hasLanguages, $languages): Resume {
             $resume = $this->updateResumeTask->run($id, $data);
 
             if ($hasLinks) {
@@ -72,6 +80,10 @@ final class UpdateResumeAction extends ParentAction
 
             if ($hasEducations) {
                 $this->replaceResumeEducationsTask->run($resume, $educations);
+            }
+
+            if ($hasLanguages) {
+                $this->replaceResumeLanguagesTask->run($resume, $languages);
             }
 
             return $resume;

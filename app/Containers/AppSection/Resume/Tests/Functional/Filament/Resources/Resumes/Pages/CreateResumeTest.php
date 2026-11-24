@@ -6,6 +6,7 @@ use App\Containers\AppSection\Resume\Enums\ResumeKind;
 use App\Containers\AppSection\Resume\Models\Resume;
 use App\Containers\AppSection\Resume\Models\ResumeEducation;
 use App\Containers\AppSection\Resume\Models\ResumeExperience;
+use App\Containers\AppSection\Resume\Models\ResumeLanguage;
 use App\Containers\AppSection\Resume\Models\ResumeLink;
 use App\Containers\AppSection\Resume\Tests\FunctionalTestCase;
 use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Pages\CreateResume;
@@ -377,6 +378,66 @@ final class CreateResumeTest extends FunctionalTestCase
             'довга спеціальність' => [['field_of_study' => str_repeat('a', 256)], 'field_of_study'],
             'довга локація' => [['location' => str_repeat('a', 256)], 'location'],
             'довга адреса' => [['institution_url' => 'https://a.com/' . str_repeat('a', 2048)], 'institution_url'],
+        ];
+    }
+
+    /**
+     * @return void
+     */
+    public function testCreatesResumeWithLanguages(): void
+    {
+        Livewire::test(CreateResume::class)
+            ->fillForm([
+                'first_name' => 'Роман',
+                'last_name' => 'Нерез',
+                'languages' => [
+                    ['language' => 'Українська', 'level' => 'native', 'is_visible' => true],
+                    ['language' => 'Англійська', 'level' => 'b2', 'level_label' => 'Intermediate', 'is_visible' => false],
+                    ['language' => 'Польська', 'level_label' => 'Розмовна', 'is_visible' => true],
+                ],
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $languages = Resume::query()->sole()->languages;
+
+        $this->assertSame(['Українська', 'Англійська', 'Польська'], $languages->pluck('language')->all());
+        $this->assertSame('native', $languages[0]->level?->value);
+        $this->assertSame('Intermediate', $languages[1]->level_label);
+        $this->assertFalse($languages[1]->is_visible);
+        $this->assertNull($languages[2]->level);
+    }
+
+    /**
+     * @param list<array<string, mixed>> $languages
+     * @param string $errorKey
+     *
+     * @return void
+     */
+    #[DataProvider('invalidLanguages')]
+    public function testRejectsInvalidLanguages(array $languages, string $errorKey): void
+    {
+        Livewire::test(CreateResume::class)
+            ->fillForm(['first_name' => 'Роман', 'last_name' => 'Нерез', 'languages' => $languages])
+            ->call('create')
+            ->assertHasFormErrors([$errorKey]);
+
+        $this->assertSame(0, Resume::query()->count());
+        $this->assertSame(0, ResumeLanguage::query()->count());
+    }
+
+    /**
+     * @return array<string, array{list<array<string, mixed>>, string}>
+     */
+    public static function invalidLanguages(): array
+    {
+        return [
+            'без назви' => [[['language' => '']], 'languages.0.language'],
+            'довга назва' => [[['language' => str_repeat('a', 256)]], 'languages.0.language'],
+            'довгий підпис' => [[['language' => 'Англійська', 'level_label' => str_repeat('a', 256)]], 'languages.0.level_label'],
+            'невідомий рівень' => [[['language' => 'Англійська', 'level' => 'z9']], 'languages.0.level'],
+            'дублікат' => [[['language' => 'Англійська'], ['language' => 'Англійська']], 'languages.1.language'],
+            'дублікат без регістру' => [[['language' => 'Англійська'], ['language' => ' англійська ']], 'languages.1.language'],
         ];
     }
 }
