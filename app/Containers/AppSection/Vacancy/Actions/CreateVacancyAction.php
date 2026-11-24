@@ -5,6 +5,7 @@ namespace App\Containers\AppSection\Vacancy\Actions;
 use App\Containers\AppSection\Vacancy\Models\Vacancy;
 use App\Containers\AppSection\Vacancy\Tasks\CreateVacancyTask;
 use App\Containers\AppSection\Vacancy\Tasks\ReplaceVacancySourcesTask;
+use App\Containers\AppSection\Vacancy\Tasks\SyncVacancyContactsTask;
 use App\Ship\Parents\Actions\Action as ParentAction;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -14,10 +15,12 @@ final class CreateVacancyAction extends ParentAction
     /**
      * @param CreateVacancyTask $createVacancyTask
      * @param ReplaceVacancySourcesTask $replaceVacancySourcesTask
+     * @param SyncVacancyContactsTask $syncVacancyContactsTask
      */
     public function __construct(
         private readonly CreateVacancyTask $createVacancyTask,
         private readonly ReplaceVacancySourcesTask $replaceVacancySourcesTask,
+        private readonly SyncVacancyContactsTask $syncVacancyContactsTask,
     ) {
     }
 
@@ -32,13 +35,33 @@ final class CreateVacancyAction extends ParentAction
     {
         /** @var list<array<string, mixed>> $sources */
         $sources = Arr::pull($data, 'sources') ?? [];
+        $contactIds = $this->contactIds(Arr::pull($data, 'contacts'));
 
-        return DB::transaction(function () use ($data, $sources): Vacancy {
+        return DB::transaction(function () use ($data, $sources, $contactIds): Vacancy {
             $vacancy = $this->createVacancyTask->run($data);
 
             $this->replaceVacancySourcesTask->run($vacancy, $sources);
+            $this->syncVacancyContactsTask->run($vacancy, $contactIds);
 
             return $vacancy->load(Vacancy::DISPLAY_RELATIONS);
         });
+    }
+
+    /**
+     * @param mixed $contacts
+     *
+     * @return list<int>
+     */
+    private function contactIds(mixed $contacts): array
+    {
+        $ids = [];
+
+        foreach (is_array($contacts) ? $contacts : [] as $id) {
+            if (is_numeric($id)) {
+                $ids[] = (int) $id;
+            }
+        }
+
+        return $ids;
     }
 }

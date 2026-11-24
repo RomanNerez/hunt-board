@@ -3,6 +3,7 @@
 namespace App\Containers\AppSection\Vacancy\Tests\Functional\Filament\Resources\Vacancies\Pages;
 
 use App\Containers\AppSection\Company\Models\Company;
+use App\Containers\AppSection\Contact\Models\Contact;
 use App\Containers\AppSection\Status\Enums\StatusColor;
 use App\Containers\AppSection\Status\Models\Status;
 use App\Containers\AppSection\User\Models\User;
@@ -444,6 +445,49 @@ final class ListVacanciesTest extends FunctionalTestCase
         $telegram = VacancySource::query()->where('name', 'Telegram')->firstOrFail();
 
         $component->assertSchemaStateSet(['sources' => [['vacancy_source_id' => $telegram->id, 'url' => null]]]);
+    }
+
+    /**
+     * @return void
+     */
+    public function testCreatesVacancyWithTwoContacts(): void
+    {
+        $olena = Contact::factory()->createOne(['name' => 'Олена Коваль']);
+        $andrii = Contact::factory()->createOne(['name' => 'Андрій Мельник']);
+
+        Livewire::test(ListVacancies::class)
+            ->callAction(TestAction::make('create'), data: [
+                ...$this->validData(),
+                'contacts' => [$olena->id, $andrii->id],
+            ])
+            ->assertHasNoFormErrors();
+
+        $vacancy = Vacancy::query()->where('title', 'Senior PHP Developer')->firstOrFail();
+
+        $this->assertDatabaseCount('contact_vacancy', 2);
+        $this->assertDatabaseHas('contact_vacancy', ['vacancy_id' => $vacancy->id, 'contact_id' => $olena->id]);
+        $this->assertDatabaseHas('contact_vacancy', ['vacancy_id' => $vacancy->id, 'contact_id' => $andrii->id]);
+    }
+
+    /**
+     * @return void
+     */
+    public function testCreatesContactWithSourceFromVacancyFormAndSelectsIt(): void
+    {
+        $linkedIn = VacancySource::factory()->createOne(['name' => 'LinkedIn']);
+
+        $component = Livewire::test(ListVacancies::class)
+            ->mountAction(TestAction::make('create'))
+            ->callAction(TestAction::make('createOption')->schemaComponent('contacts'), data: [
+                'name' => 'Олена Коваль',
+                'sources' => [['vacancy_source_id' => $linkedIn->id, 'url' => 'https://www.linkedin.com/in/olena-koval/']],
+            ])
+            ->assertHasNoFormErrors();
+
+        $olena = Contact::query()->where('name', 'Олена Коваль')->firstOrFail();
+
+        $component->assertSchemaStateSet(['contacts' => [$olena->id]]);
+        $this->assertDatabaseHas('contact_vacancy_source', ['contact_id' => $olena->id, 'vacancy_source_id' => $linkedIn->id, 'url' => 'https://www.linkedin.com/in/olena-koval/']);
     }
 
     /**

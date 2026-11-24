@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Containers\AppSection\Vacancy\UI\Filament\Support;
+namespace App\Containers\AppSection\VacancySource\UI\Filament\Support;
 
 use App\Containers\AppSection\VacancySource\Models\VacancySource;
 use Illuminate\Database\Eloquent\Relations\Pivot;

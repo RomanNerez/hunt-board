@@ -4,15 +4,15 @@ namespace App\Containers\AppSection\Vacancy\UI\Filament\Resources\Vacancies\Sche
 
 use App\Containers\AppSection\Company\Actions\CreateCompanyAction;
 use App\Containers\AppSection\Company\UI\Filament\Resources\Companies\Schemas\CompanyForm;
+use App\Containers\AppSection\Contact\Actions\CreateContactAction;
+use App\Containers\AppSection\Contact\Models\Contact;
+use App\Containers\AppSection\Contact\UI\Filament\Resources\Contacts\Schemas\ContactForm;
 use App\Containers\AppSection\Vacancy\Enums\Currency;
 use App\Containers\AppSection\Vacancy\Enums\WorkFormat;
-use App\Containers\AppSection\VacancySource\Actions\CreateVacancySourceAction;
-use App\Containers\AppSection\VacancySource\Models\VacancySource;
-use App\Containers\AppSection\VacancySource\UI\Filament\Resources\VacancySources\Schemas\VacancySourceForm;
+use App\Containers\AppSection\VacancySource\UI\Filament\Resources\VacancySources\Schemas\VacancySourcesRepeater;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -59,7 +59,12 @@ final class VacancyForm
                     ->columnSpanFull(),
                 Section::make('Джерела')
                     ->schema([
-                        self::sourcesRepeater(),
+                        VacancySourcesRepeater::make(),
+                    ])
+                    ->columnSpanFull(),
+                Section::make('Контакти')
+                    ->schema([
+                        self::contactsSelect(),
                     ])
                     ->columnSpanFull(),
                 Section::make('Умови')
@@ -134,47 +139,25 @@ final class VacancyForm
     }
 
     /**
-     * @return Repeater
-     */
-    private static function sourcesRepeater(): Repeater
-    {
-        return Repeater::make('sources')
-            ->label('Джерела')
-            ->hiddenLabel()
-            ->schema([
-                self::vacancySourceSelect(),
-                TextInput::make('url')
-                    ->label('Посилання')
-                    ->url()
-                    ->rule('url:http,https')
-                    ->maxLength(2048),
-            ])
-            ->columns(2)
-            ->defaultItems(0)
-            ->reorderable(false)
-            ->addActionLabel('Додати джерело')
-            ->columnSpanFull();
-    }
-
-    /**
      * @return Select
      */
-    private static function vacancySourceSelect(): Select
+    private static function contactsSelect(): Select
     {
-        return Select::make('vacancy_source_id')
-            ->label('Джерело')
-            ->options(static fn (): Collection => VacancySource::query()->pluck('name', 'id')->sort())
+        return Select::make('contacts')
+            ->label('Контакти')
+            ->hiddenLabel()
+            ->multiple()
+            ->options(static fn (): Collection => Contact::query()->pluck('name', 'id')->sort())
             ->searchable()
-            ->required()
-            ->distinct()
-            ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-            ->createOptionForm(static fn (Schema $schema): Schema => VacancySourceForm::configure($schema->model(VacancySource::class)))
-            ->createOptionModalHeading('Створити джерело вакансії')
+            ->createOptionForm(static fn (Schema $schema): Schema => ContactForm::configure($schema->model(Contact::class)))
+            ->createOptionModalHeading('Створити контакт')
+            ->createOptionAction(static fn (Action $action): Action => $action->modalWidth(Width::ThreeExtraLarge))
             ->createOptionUsing(static function (array $data): int {
                 /** @var array<string, mixed> $attributes */
                 $attributes = $data;
 
-                return app(CreateVacancySourceAction::class)->run($attributes)->id;
-            });
+                return app(CreateContactAction::class)->run($attributes)->id;
+            })
+            ->columnSpanFull();
     }
 }

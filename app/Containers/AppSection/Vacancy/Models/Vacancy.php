@@ -3,6 +3,7 @@
 namespace App\Containers\AppSection\Vacancy\Models;
 
 use App\Containers\AppSection\Company\Models\Company;
+use App\Containers\AppSection\Contact\Models\Contact;
 use App\Containers\AppSection\Status\Models\Status;
 use App\Containers\AppSection\Vacancy\Data\Factories\VacancyFactory;
 use App\Containers\AppSection\Vacancy\Enums\Currency;
@@ -35,6 +36,7 @@ use Illuminate\Support\Str;
  * @property Company $company
  * @property Status $status
  * @property Collection<int, VacancySource> $vacancySources
+ * @property Collection<int, Contact> $contacts
  *
  * @method static VacancyFactory<self> factory(int|null $count = null, array<string, mixed> $state = [])
  */
@@ -43,7 +45,7 @@ final class Vacancy extends ParentModel
     /**
      * @var list<string>
      */
-    public const DISPLAY_RELATIONS = ['company', 'status', 'vacancySources'];
+    public const DISPLAY_RELATIONS = ['company', 'status', 'vacancySources', 'contacts.vacancySources'];
 
     /**
      * @var list<string>
@@ -100,6 +102,17 @@ final class Vacancy extends ParentModel
             ->withPivot('url')
             ->withTimestamps()
             ->orderByPivot('id');
+    }
+
+    /**
+     * @return BelongsToMany<Contact, $this>
+     */
+    public function contacts(): BelongsToMany
+    {
+        $relation = $this->belongsToMany(Contact::class)->withTimestamps();
+        $relation->getBaseQuery()->orderBy('contacts.name');
+
+        return $relation;
     }
 
     /**

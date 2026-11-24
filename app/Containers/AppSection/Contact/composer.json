@@ -1,0 +1,6 @@
+{
+    "name": "apiato/contact",
+    "description": "Contact Container",
+    "type": "apiato-container",
+    "require": {}
+}

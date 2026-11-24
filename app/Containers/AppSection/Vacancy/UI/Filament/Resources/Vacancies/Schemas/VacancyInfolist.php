@@ -4,8 +4,8 @@ namespace App\Containers\AppSection\Vacancy\UI\Filament\Resources\Vacancies\Sche
 
 use App\Containers\AppSection\Vacancy\Models\Vacancy;
 use App\Containers\AppSection\Vacancy\UI\Filament\Support\SalaryRangeFormatter;
-use App\Containers\AppSection\Vacancy\UI\Filament\Support\VacancySourceLink;
 use App\Containers\AppSection\VacancySource\Models\VacancySource;
+use App\Containers\AppSection\VacancySource\UI\Filament\Support\VacancySourceLink;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
@@ -44,6 +44,11 @@ final class VacancyInfolist
                 Section::make('Джерела')
                     ->schema([
                         self::sourcesEntry(),
+                    ])
+                    ->columnSpanFull(),
+                Section::make('Контакти')
+                    ->schema([
+                        self::contactsEntry(),
                     ])
                     ->columnSpanFull(),
                 Section::make('Умови')
@@ -101,6 +106,34 @@ final class VacancyInfolist
                     ->url(static fn (VacancySource $record): string|null => VacancySourceLink::url($record), shouldOpenInNewTab: true),
             ])
             ->columns(2)
+            ->placeholder('—')
+            ->columnSpanFull();
+    }
+
+    /**
+     * @return RepeatableEntry
+     */
+    private static function contactsEntry(): RepeatableEntry
+    {
+        return RepeatableEntry::make('contacts')
+            ->label('Контакти')
+            ->hiddenLabel()
+            ->schema([
+                TextEntry::make('name')
+                    ->label('Ім\'я'),
+                RepeatableEntry::make('vacancySources')
+                    ->label('Джерела')
+                    ->hiddenLabel()
+                    ->schema([
+                        TextEntry::make('name')
+                            ->label('Джерело'),
+                        TextEntry::make('pivot.url')
+                            ->label('Посилання')
+                            ->url(static fn (VacancySource $record): string|null => VacancySourceLink::url($record), shouldOpenInNewTab: true),
+                    ])
+                    ->columns(2)
+                    ->contained(false),
+            ])
             ->placeholder('—')
             ->columnSpanFull();
     }

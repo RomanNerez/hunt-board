@@ -6,8 +6,7 @@ use App\Containers\AppSection\Vacancy\Actions\DeleteVacancyAction;
 use App\Containers\AppSection\Vacancy\Actions\UpdateVacancyAction;
 use App\Containers\AppSection\Vacancy\Models\Vacancy;
 use App\Containers\AppSection\Vacancy\UI\Filament\Resources\Vacancies\VacancyResource;
-use App\Containers\AppSection\Vacancy\UI\Filament\Support\VacancySourceLink;
-use App\Containers\AppSection\VacancySource\Models\VacancySource;
+use App\Containers\AppSection\VacancySource\UI\Filament\Resources\VacancySources\Schemas\VacancySourcesRepeater;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
@@ -39,7 +38,8 @@ final class ViewVacancy extends ViewRecord
                 ->modalWidth(Width::ThreeExtraLarge)
                 ->mutateRecordDataUsing(static fn (Vacancy $record, array $data): array => [
                     ...$data,
-                    'sources' => self::sourcesFormState($record),
+                    'sources' => VacancySourcesRepeater::stateFrom($record->vacancySources),
+                    'contacts' => $record->contacts->modelKeys(),
                 ])
                 ->using(static function (Vacancy $record, array $data): Vacancy {
                     /** @var array<string, mixed> $attributes */
@@ -53,20 +53,5 @@ final class ViewVacancy extends ViewRecord
                 ->using(static fn (Vacancy $record): bool => app(DeleteVacancyAction::class)->run($record->id))
                 ->successRedirectUrl(VacancyResource::getUrl('index')),
         ];
-    }
-
-    /**
-     * @param Vacancy $record
-     *
-     * @return list<array{vacancy_source_id: int, url: string|null}>
-     */
-    private static function sourcesFormState(Vacancy $record): array
-    {
-        return array_values($record->vacancySources
-            ->map(static fn (VacancySource $source): array => [
-                'vacancy_source_id' => $source->id,
-                'url' => VacancySourceLink::url($source),
-            ])
-            ->all());
     }
 }

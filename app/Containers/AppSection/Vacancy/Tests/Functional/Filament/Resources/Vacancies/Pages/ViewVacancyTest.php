@@ -3,6 +3,7 @@
 namespace App\Containers\AppSection\Vacancy\Tests\Functional\Filament\Resources\Vacancies\Pages;
 
 use App\Containers\AppSection\Company\Models\Company;
+use App\Containers\AppSection\Contact\Models\Contact;
 use App\Containers\AppSection\Status\Enums\StatusColor;
 use App\Containers\AppSection\Status\Models\Status;
 use App\Containers\AppSection\User\Models\User;
@@ -273,6 +274,88 @@ final class ViewVacancyTest extends FunctionalTestCase
             ->assertSeeHtml('<strong>Laravel</strong>');
 
         $this->assertSame('<p>Стек: <strong>Laravel</strong></p>', $vacancy->refresh()->description);
+    }
+
+    /**
+     * @return void
+     */
+    public function testShowsContactsWithSourceLinksOpeningInNewTab(): void
+    {
+        $contact = Contact::factory()
+            ->hasAttached(VacancySource::factory()->state(['name' => 'LinkedIn']), ['url' => 'https://www.linkedin.com/in/olena-koval/'])
+            ->hasAttached(VacancySource::factory()->state(['name' => 'Telegram']), ['url' => null])
+            ->createOne(['name' => 'Олена Коваль']);
+        $vacancy = Vacancy::factory()->hasAttached($contact)->createOne();
+
+        Livewire::test(ViewVacancy::class, ['record' => $vacancy->id])
+            ->assertSeeInOrder(['Контакти', 'Олена Коваль', 'LinkedIn', 'https://www.linkedin.com/in/olena-koval/', 'Telegram', 'Умови'])
+            ->assertSeeHtml('href="https://www.linkedin.com/in/olena-koval/"');
+
+        $html = (string) $this->get(VacancyResource::getUrl('view', ['record' => $vacancy]))->getContent();
+
+        $this->assertSame(1, substr_count($html, 'target="_blank"'));
+        $this->assertSame(1, substr_count($html, 'href="https://'));
+    }
+
+    /**
+     * @return void
+     */
+    public function testShowsDashForVacancyWithoutContacts(): void
+    {
+        $vacancy = Vacancy::factory()
+            ->hasAttached(VacancySource::factory()->state(['name' => 'DOU']), ['url' => 'https://jobs.dou.ua/vacancies/123/'])
+            ->createOne(['salary_min' => 4000, 'salary_max' => 5500, 'currency' => Currency::USD]);
+
+        Livewire::test(ViewVacancy::class, ['record' => $vacancy->id])
+            ->assertSeeInOrder(['DOU', 'Контакти', '—', 'Умови', '4 000–5 500 USD']);
+    }
+
+    /**
+     * @return void
+     */
+    public function testEditShowsCurrentContacts(): void
+    {
+        $olena = Contact::factory()->createOne(['name' => 'Олена Коваль']);
+        $andrii = Contact::factory()->createOne(['name' => 'Андрій Мельник']);
+        $vacancy = Vacancy::factory()->hasAttached($olena)->hasAttached($andrii)->createOne();
+
+        Livewire::test(ViewVacancy::class, ['record' => $vacancy->id])
+            ->mountAction(TestAction::make('edit'))
+            ->assertSchemaStateSet(['contacts' => [$andrii->id, $olena->id]]);
+    }
+
+    /**
+     * @return void
+     */
+    public function testEditRemovesContactAndKeepsItInDirectory(): void
+    {
+        $olena = Contact::factory()->createOne(['name' => 'Олена Коваль']);
+        $andrii = Contact::factory()->createOne(['name' => 'Андрій Мельник']);
+        $vacancy = Vacancy::factory()->hasAttached($olena)->hasAttached($andrii)->createOne();
+
+        Livewire::test(ViewVacancy::class, ['record' => $vacancy->id])
+            ->callAction(TestAction::make('edit'), data: ['contacts' => [$olena->id]])
+            ->assertHasNoFormErrors()
+            ->assertDontSee('Андрій Мельник');
+
+        $this->assertSame([$olena->id], $vacancy->contacts()->pluck('contacts.id')->all());
+        $this->assertModelExists($andrii);
+    }
+
+    /**
+     * @return void
+     */
+    public function testDeletingVacancyKeepsItsContacts(): void
+    {
+        $contact = Contact::factory()->createOne(['name' => 'Олена Коваль']);
+        $vacancy = Vacancy::factory()->hasAttached($contact)->createOne(['title' => 'PHP Developer']);
+
+        Livewire::test(ViewVacancy::class, ['record' => $vacancy->id])
+            ->callAction(TestAction::make('delete'));
+
+        $this->assertModelMissing($vacancy);
+        $this->assertModelExists($contact);
+        $this->assertDatabaseMissing('contact_vacancy', ['contact_id' => $contact->id]);
     }
 
     /**
