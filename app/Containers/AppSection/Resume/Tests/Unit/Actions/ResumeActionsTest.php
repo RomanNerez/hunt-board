@@ -7,8 +7,10 @@ use App\Containers\AppSection\Resume\Actions\DeleteResumeAction;
 use App\Containers\AppSection\Resume\Actions\UpdateResumeAction;
 use App\Containers\AppSection\Resume\Enums\ResumeKind;
 use App\Containers\AppSection\Resume\Models\Resume;
+use App\Containers\AppSection\Resume\Models\ResumeExperience;
 use App\Containers\AppSection\Resume\Models\ResumeLink;
 use App\Containers\AppSection\Resume\Tests\UnitTestCase;
+use App\Containers\AppSection\Stack\Models\Stack;
 use App\Containers\AppSection\User\Models\User;
 use Illuminate\Database\QueryException;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -111,5 +113,93 @@ final class ResumeActionsTest extends UnitTestCase
         }
 
         $this->assertSame('Старе', $resume->refresh()->first_name);
+    }
+
+    /**
+     * @return void
+     */
+    public function testCreateStoresExperiencesInOrder(): void
+    {
+        $user = User::factory()->createOne();
+
+        $resume = app(CreateResumeAction::class)->run($user->id, [
+            'first_name' => 'Роман',
+            'last_name' => 'Нерез',
+            'experiences' => [
+                ['company' => 'MacPaw', 'position' => 'Dev', 'start_date' => '2021-03-01'],
+                ['company' => 'Grammarly', 'position' => 'Dev', 'start_date' => '2019-01-01'],
+            ],
+        ]);
+
+        $this->assertSame(['MacPaw', 'Grammarly'], $resume->experiences()->pluck('company')->all());
+    }
+
+    /**
+     * @return void
+     */
+    public function testUpdateReplacesExperiencesOnlyWhenKeyIsPresent(): void
+    {
+        $resume = Resume::factory()->createOne();
+        ResumeExperience::factory()->createOne(['resume_id' => $resume->id, 'company' => 'MacPaw']);
+
+        app(UpdateResumeAction::class)->run($resume->id, ['first_name' => 'Нове']);
+        $this->assertSame(['MacPaw'], $resume->experiences()->pluck('company')->all());
+
+        app(UpdateResumeAction::class)->run($resume->id, ['experiences' => [['company' => 'Preply', 'position' => 'Dev', 'start_date' => '2022-05-01']]]);
+        $this->assertSame(['Preply'], $resume->experiences()->pluck('company')->all());
+    }
+
+    /**
+     * @return void
+     */
+    public function testUpdateRollsBackResumeWhenExperiencesFail(): void
+    {
+        $resume = Resume::factory()->createOne(['first_name' => 'Старе']);
+
+        try {
+            app(UpdateResumeAction::class)->run($resume->id, ['first_name' => 'Нове', 'experiences' => [['company' => null, 'position' => 'Dev', 'start_date' => '2021-03-01']]]);
+            $this->fail('Exception expected');
+        } catch (QueryException) {
+        }
+
+        $this->assertSame('Старе', $resume->refresh()->first_name);
+    }
+
+    /**
+     * @return void
+     */
+    public function testExperiencesKeepStacksInOrderAndReplaceDoesNotLeavePivotRows(): void
+    {
+        $php = Stack::factory()->createOne();
+        $laravel = Stack::factory()->createOne();
+        $resume = Resume::factory()->createOne();
+
+        $action = app(UpdateResumeAction::class);
+
+        $action->run($resume->id, ['experiences' => [
+            ['company' => 'MacPaw', 'position' => 'Dev', 'start_date' => '2021-03-01', 'stacks' => [$laravel->id, $php->id]],
+        ]]);
+        $this->assertSame([$laravel->id, $php->id], $resume->experiences()->sole()->stacks->modelKeys());
+
+        $action->run($resume->id, ['experiences' => [
+            ['company' => 'MacPaw', 'position' => 'Dev', 'start_date' => '2021-03-01', 'stacks' => [$php->id]],
+        ]]);
+
+        $this->assertSame([$php->id], $resume->experiences()->sole()->stacks->modelKeys());
+        $this->assertDatabaseCount('stackables', 1);
+    }
+
+    /**
+     * @return void
+     */
+    public function testDeleteRemovesExperienceStacks(): void
+    {
+        $resume = Resume::factory()->createOne();
+        $experience = ResumeExperience::factory()->createOne(['resume_id' => $resume->id]);
+        $experience->stacks()->attach(Stack::factory()->createOne()->id, ['sort' => 0]);
+
+        app(DeleteResumeAction::class)->run($resume->id);
+
+        $this->assertDatabaseCount('stackables', 0);
     }
 }

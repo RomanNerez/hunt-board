@@ -3,6 +3,7 @@
 namespace App\Containers\AppSection\Resume\Tests\Unit\Data;
 
 use App\Containers\AppSection\Resume\Models\Resume;
+use App\Containers\AppSection\Resume\Models\ResumeExperience;
 use App\Containers\AppSection\Resume\Models\ResumeLink;
 use App\Containers\AppSection\Resume\Tests\UnitTestCase;
 use App\Containers\AppSection\User\Models\User;
@@ -75,6 +76,46 @@ final class MigrationTest extends UnitTestCase
         $first = ResumeLink::factory()->createOne(['resume_id' => $resume->id, 'sort_order' => 0]);
 
         $this->assertSame([$first->id, $second->id], $resume->links()->pluck('id')->all());
+
+        $resume->delete();
+
+        $this->assertModelMissing($first);
+        $this->assertModelMissing($second);
+    }
+
+    /**
+     * @return void
+     */
+    public function testResumeExperiencesTableHasExpectedColumns(): void
+    {
+        $this->assertDatabaseTable('resume_experiences', [
+            'id' => 'int8',
+            'resume_id' => 'int8',
+            'company' => 'varchar',
+            'company_url' => 'varchar',
+            'position' => 'varchar',
+            'location' => 'varchar',
+            'employment_type' => 'varchar',
+            'start_date' => 'date',
+            'end_date' => 'date',
+            'description' => 'text',
+            'sort_order' => 'int4',
+            'is_visible' => 'bool',
+            'created_at' => 'timestamp',
+            'updated_at' => 'timestamp',
+        ]);
+    }
+
+    /**
+     * @return void
+     */
+    public function testExperiencesAreOrderedAndDeletedWithResume(): void
+    {
+        $resume = Resume::factory()->createOne();
+        $second = ResumeExperience::factory()->createOne(['resume_id' => $resume->id, 'sort_order' => 1]);
+        $first = ResumeExperience::factory()->createOne(['resume_id' => $resume->id, 'sort_order' => 0]);
+
+        $this->assertSame([$first->id, $second->id], $resume->experiences()->pluck('id')->all());
 
         $resume->delete();
 

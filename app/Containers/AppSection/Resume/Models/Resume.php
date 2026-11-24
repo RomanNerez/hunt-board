@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonImmutable|null $updated_at
  * @property User $user
  * @property Collection<int, ResumeLink> $links
+ * @property Collection<int, ResumeExperience> $experiences
  *
  * @method static ResumeFactory<self> factory(int|null $count = null, array<string, mixed> $state = [])
  */
@@ -61,5 +62,13 @@ final class Resume extends ParentModel
     public function links(): HasMany
     {
         return $this->hasMany(ResumeLink::class)->orderBy('sort_order');
+    }
+
+    /**
+     * @return HasMany<ResumeExperience, $this>
+     */
+    public function experiences(): HasMany
+    {
+        return $this->hasMany(ResumeExperience::class)->orderBy('sort_order');
     }
 }
