@@ -6,6 +6,7 @@ use App\Containers\AppSection\Resume\Actions\DeleteResumeAction;
 use App\Containers\AppSection\Resume\Actions\UpdateResumeAction;
 use App\Containers\AppSection\Resume\Models\Resume;
 use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\ResumeResource;
+use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Schemas\ResumeLinksRepeater;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
@@ -29,6 +30,21 @@ final class EditResume extends EditRecord
                 ->modalHeading('Видалити резюме')
                 ->using(static fn (Resume $record): bool => app(DeleteResumeAction::class)->run($record->id)),
         ];
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     *
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        /** @var Resume $resume */
+        $resume = $this->getRecord();
+
+        $data['links'] = ResumeLinksRepeater::stateFrom($resume->load('links')->links);
+
+        return $data;
     }
 
     /**

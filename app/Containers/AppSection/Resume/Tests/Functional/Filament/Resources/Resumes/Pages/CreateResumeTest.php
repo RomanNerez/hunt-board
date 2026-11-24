@@ -4,6 +4,7 @@ namespace App\Containers\AppSection\Resume\Tests\Functional\Filament\Resources\R
 
 use App\Containers\AppSection\Resume\Enums\ResumeKind;
 use App\Containers\AppSection\Resume\Models\Resume;
+use App\Containers\AppSection\Resume\Models\ResumeLink;
 use App\Containers\AppSection\Resume\Tests\FunctionalTestCase;
 use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Pages\CreateResume;
 use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\ResumeResource;
@@ -110,5 +111,89 @@ final class CreateResumeTest extends FunctionalTestCase
             ->assertHasFormErrors([$field => $rule]);
 
         $this->assertDatabaseCount(Resume::class, 0);
+    }
+
+    /**
+     * @return void
+     */
+    public function testCreatesResumeWithLinks(): void
+    {
+        Livewire::test(CreateResume::class)
+            ->fillForm([
+                'first_name' => 'Роман',
+                'last_name' => 'Нерез',
+                'links' => [
+                    ['icon' => 'fab-github', 'label' => 'GitHub', 'url' => 'https://github.com/john', 'is_visible' => true],
+                    ['icon' => null, 'label' => 'Пошта', 'url' => 'mailto:john@mail.com', 'is_visible' => false],
+                ],
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $links = Resume::query()->sole()->links;
+
+        $this->assertSame(['GitHub', 'Пошта'], $links->pluck('label')->all());
+        $this->assertSame('fab-github', $links[0]->icon);
+        $this->assertFalse($links[1]->is_visible);
+    }
+
+    /**
+     * @param array<string, mixed> $link
+     * @param string $field
+     *
+     * @return void
+     */
+    #[DataProvider('invalidLinks')]
+    public function testRejectsInvalidLinks(array $link, string $field): void
+    {
+        Livewire::test(CreateResume::class)
+            ->fillForm(['first_name' => 'Роман', 'last_name' => 'Нерез', 'links' => [$link]])
+            ->call('create')
+            ->assertHasFormErrors(["links.0.$field"]);
+
+        $this->assertSame(0, Resume::query()->count());
+        $this->assertSame(0, ResumeLink::query()->count());
+    }
+
+    /**
+     * @return array<string, array{array<string, mixed>, string}>
+     */
+    public static function invalidLinks(): array
+    {
+        return [
+            'без підпису' => [['label' => '', 'url' => 'https://a.com'], 'label'],
+            'без адреси' => [['label' => 'A', 'url' => ''], 'url'],
+            'javascript' => [['label' => 'A', 'url' => 'javascript:alert(1)'], 'url'],
+            'без схеми' => [['label' => 'A', 'url' => 'linkedin.com/in/john'], 'url'],
+            'довгий підпис' => [['label' => str_repeat('a', 256), 'url' => 'https://a.com'], 'label'],
+            'довга адреса' => [['label' => 'A', 'url' => 'https://a.com/' . str_repeat('a', 2048)], 'url'],
+        ];
+    }
+
+    /**
+     * @param string $url
+     *
+     * @return void
+     */
+    #[DataProvider('allowedUrls')]
+    public function testAcceptsAllowedSchemes(string $url): void
+    {
+        Livewire::test(CreateResume::class)
+            ->fillForm(['first_name' => 'Роман', 'last_name' => 'Нерез', 'links' => [['label' => 'A', 'url' => $url]]])
+            ->call('create')
+            ->assertHasNoFormErrors();
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function allowedUrls(): array
+    {
+        return [
+            'https' => ['https://a.com'],
+            'http' => ['http://a.com'],
+            'mailto' => ['mailto:a@a.com'],
+            'tel' => ['tel:+380501234567'],
+        ];
     }
 }

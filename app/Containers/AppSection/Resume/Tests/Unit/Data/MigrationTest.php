@@ -3,6 +3,7 @@
 namespace App\Containers\AppSection\Resume\Tests\Unit\Data;
 
 use App\Containers\AppSection\Resume\Models\Resume;
+use App\Containers\AppSection\Resume\Models\ResumeLink;
 use App\Containers\AppSection\Resume\Tests\UnitTestCase;
 use App\Containers\AppSection\User\Models\User;
 use PHPUnit\Framework\Attributes\CoversNothing;
@@ -44,5 +45,40 @@ final class MigrationTest extends UnitTestCase
         }
 
         $this->assertModelExists($otherResume);
+    }
+
+    /**
+     * @return void
+     */
+    public function testResumeLinksTableHasExpectedColumns(): void
+    {
+        $this->assertDatabaseTable('resume_links', [
+            'id' => 'int8',
+            'resume_id' => 'int8',
+            'icon' => 'varchar',
+            'label' => 'varchar',
+            'url' => 'varchar',
+            'sort_order' => 'int4',
+            'is_visible' => 'bool',
+            'created_at' => 'timestamp',
+            'updated_at' => 'timestamp',
+        ]);
+    }
+
+    /**
+     * @return void
+     */
+    public function testLinksAreOrderedAndDeletedWithResume(): void
+    {
+        $resume = Resume::factory()->createOne();
+        $second = ResumeLink::factory()->createOne(['resume_id' => $resume->id, 'sort_order' => 1]);
+        $first = ResumeLink::factory()->createOne(['resume_id' => $resume->id, 'sort_order' => 0]);
+
+        $this->assertSame([$first->id, $second->id], $resume->links()->pluck('id')->all());
+
+        $resume->delete();
+
+        $this->assertModelMissing($first);
+        $this->assertModelMissing($second);
     }
 }

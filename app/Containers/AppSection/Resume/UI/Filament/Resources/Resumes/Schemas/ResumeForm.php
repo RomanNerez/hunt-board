@@ -34,6 +34,7 @@ final class ResumeForm
                     ->label('Короткий опис')
                     ->rows(6)
                     ->columnSpanFull(),
+                ResumeLinksRepeater::make(),
             ]);
     }
 }

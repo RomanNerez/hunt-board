@@ -3,16 +3,21 @@
 namespace App\Containers\AppSection\Resume\Actions;
 
 use App\Containers\AppSection\Resume\Models\Resume;
+use App\Containers\AppSection\Resume\Tasks\ReplaceResumeLinksTask;
 use App\Containers\AppSection\Resume\Tasks\UpdateResumeTask;
 use App\Ship\Parents\Actions\Action as ParentAction;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 
 final class UpdateResumeAction extends ParentAction
 {
     /**
      * @param UpdateResumeTask $updateResumeTask
+     * @param ReplaceResumeLinksTask $replaceResumeLinksTask
      */
     public function __construct(
         private readonly UpdateResumeTask $updateResumeTask,
+        private readonly ReplaceResumeLinksTask $replaceResumeLinksTask,
     ) {
     }
 
@@ -21,9 +26,24 @@ final class UpdateResumeAction extends ParentAction
      * @param array<string, mixed> $data
      *
      * @return Resume
+     *
+     * @throws \Throwable
      */
     public function run(int $id, array $data): Resume
     {
-        return $this->updateResumeTask->run($id, $data);
+        $hasLinks = array_key_exists('links', $data);
+
+        /** @var list<array<string, mixed>> $links */
+        $links = Arr::pull($data, 'links') ?? [];
+
+        return DB::transaction(function () use ($id, $data, $hasLinks, $links): Resume {
+            $resume = $this->updateResumeTask->run($id, $data);
+
+            if ($hasLinks) {
+                $this->replaceResumeLinksTask->run($resume, $links);
+            }
+
+            return $resume;
+        });
     }
 }

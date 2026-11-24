@@ -7,7 +7,9 @@ use App\Containers\AppSection\Resume\Enums\ResumeKind;
 use App\Containers\AppSection\User\Models\User;
 use App\Ship\Parents\Models\Model as ParentModel;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
@@ -20,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  * @property User $user
+ * @property Collection<int, ResumeLink> $links
  *
  * @method static ResumeFactory<self> factory(int|null $count = null, array<string, mixed> $state = [])
  */
@@ -50,5 +53,13 @@ final class Resume extends ParentModel
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return HasMany<ResumeLink, $this>
+     */
+    public function links(): HasMany
+    {
+        return $this->hasMany(ResumeLink::class)->orderBy('sort_order');
     }
 }

@@ -7,8 +7,10 @@ use App\Containers\AppSection\Resume\Actions\DeleteResumeAction;
 use App\Containers\AppSection\Resume\Actions\UpdateResumeAction;
 use App\Containers\AppSection\Resume\Enums\ResumeKind;
 use App\Containers\AppSection\Resume\Models\Resume;
+use App\Containers\AppSection\Resume\Models\ResumeLink;
 use App\Containers\AppSection\Resume\Tests\UnitTestCase;
 use App\Containers\AppSection\User\Models\User;
+use Illuminate\Database\QueryException;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 #[CoversClass(CreateResumeAction::class)]
@@ -59,5 +61,55 @@ final class ResumeActionsTest extends UnitTestCase
 
         $this->assertTrue(app(DeleteResumeAction::class)->run($resume->id));
         $this->assertModelMissing($resume);
+    }
+
+    /**
+     * @return void
+     */
+    public function testCreateStoresLinksInOrder(): void
+    {
+        $user = User::factory()->createOne();
+
+        $resume = app(CreateResumeAction::class)->run($user->id, [
+            'first_name' => 'Роман',
+            'last_name' => 'Нерез',
+            'links' => [
+                ['label' => 'LinkedIn', 'url' => 'https://linkedin.com/in/john'],
+                ['label' => 'GitHub', 'url' => 'https://github.com/john'],
+            ],
+        ]);
+
+        $this->assertSame(['LinkedIn', 'GitHub'], $resume->links()->pluck('label')->all());
+    }
+
+    /**
+     * @return void
+     */
+    public function testUpdateReplacesLinksOnlyWhenKeyIsPresent(): void
+    {
+        $resume = Resume::factory()->createOne();
+        ResumeLink::factory()->createOne(['resume_id' => $resume->id, 'label' => 'LinkedIn']);
+
+        app(UpdateResumeAction::class)->run($resume->id, ['first_name' => 'Нове']);
+        $this->assertSame(['LinkedIn'], $resume->links()->pluck('label')->all());
+
+        app(UpdateResumeAction::class)->run($resume->id, ['links' => [['label' => 'Telegram', 'url' => 'https://t.me/john']]]);
+        $this->assertSame(['Telegram'], $resume->links()->pluck('label')->all());
+    }
+
+    /**
+     * @return void
+     */
+    public function testUpdateRollsBackResumeWhenLinksFail(): void
+    {
+        $resume = Resume::factory()->createOne(['first_name' => 'Старе']);
+
+        try {
+            app(UpdateResumeAction::class)->run($resume->id, ['first_name' => 'Нове', 'links' => [['label' => null, 'url' => 'https://a.com']]]);
+            $this->fail('Exception expected');
+        } catch (QueryException) {
+        }
+
+        $this->assertSame('Старе', $resume->refresh()->first_name);
     }
 }
