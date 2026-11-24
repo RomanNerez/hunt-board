@@ -36,6 +36,7 @@ final class ResumeForm
                     ->columnSpanFull(),
                 ResumeLinksRepeater::make(),
                 ResumeExperiencesRepeater::make(),
+                ResumeEducationsRepeater::make(),
             ]);
     }
 }

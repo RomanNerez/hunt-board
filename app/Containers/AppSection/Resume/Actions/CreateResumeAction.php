@@ -4,6 +4,7 @@ namespace App\Containers\AppSection\Resume\Actions;
 
 use App\Containers\AppSection\Resume\Models\Resume;
 use App\Containers\AppSection\Resume\Tasks\CreateResumeTask;
+use App\Containers\AppSection\Resume\Tasks\ReplaceResumeEducationsTask;
 use App\Containers\AppSection\Resume\Tasks\ReplaceResumeExperiencesTask;
 use App\Containers\AppSection\Resume\Tasks\ReplaceResumeLinksTask;
 use App\Containers\AppSection\Stack\Tasks\SyncStacksTask;
@@ -18,12 +19,14 @@ final class CreateResumeAction extends ParentAction
      * @param ReplaceResumeLinksTask $replaceResumeLinksTask
      * @param ReplaceResumeExperiencesTask $replaceResumeExperiencesTask
      * @param SyncStacksTask $syncStacksTask
+     * @param ReplaceResumeEducationsTask $replaceResumeEducationsTask
      */
     public function __construct(
         private readonly CreateResumeTask $createResumeTask,
         private readonly ReplaceResumeLinksTask $replaceResumeLinksTask,
         private readonly ReplaceResumeExperiencesTask $replaceResumeExperiencesTask,
         private readonly SyncStacksTask $syncStacksTask,
+        private readonly ReplaceResumeEducationsTask $replaceResumeEducationsTask,
     ) {
     }
 
@@ -47,7 +50,12 @@ final class CreateResumeAction extends ParentAction
         /** @var list<array<string, mixed>> $experiences */
         $experiences = Arr::pull($data, 'experiences') ?? [];
 
-        return DB::transaction(function () use ($userId, $data, $hasLinks, $links, $hasExperiences, $experiences): Resume {
+        $hasEducations = array_key_exists('educations', $data);
+
+        /** @var list<array<string, mixed>> $educations */
+        $educations = Arr::pull($data, 'educations') ?? [];
+
+        return DB::transaction(function () use ($userId, $data, $hasLinks, $links, $hasExperiences, $experiences, $hasEducations, $educations): Resume {
             $resume = $this->createResumeTask->run($userId, $data);
 
             if ($hasLinks) {
@@ -60,6 +68,10 @@ final class CreateResumeAction extends ParentAction
                 foreach ($created as $position => $experience) {
                     $this->syncStacksTask->run($experience, $experiences[$position]['stacks'] ?? []);
                 }
+            }
+
+            if ($hasEducations) {
+                $this->replaceResumeEducationsTask->run($resume, $educations);
             }
 
             return $resume;

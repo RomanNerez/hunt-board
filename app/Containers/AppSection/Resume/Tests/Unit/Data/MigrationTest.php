@@ -3,6 +3,7 @@
 namespace App\Containers\AppSection\Resume\Tests\Unit\Data;
 
 use App\Containers\AppSection\Resume\Models\Resume;
+use App\Containers\AppSection\Resume\Models\ResumeEducation;
 use App\Containers\AppSection\Resume\Models\ResumeExperience;
 use App\Containers\AppSection\Resume\Models\ResumeLink;
 use App\Containers\AppSection\Resume\Tests\UnitTestCase;
@@ -116,6 +117,46 @@ final class MigrationTest extends UnitTestCase
         $first = ResumeExperience::factory()->createOne(['resume_id' => $resume->id, 'sort_order' => 0]);
 
         $this->assertSame([$first->id, $second->id], $resume->experiences()->pluck('id')->all());
+
+        $resume->delete();
+
+        $this->assertModelMissing($first);
+        $this->assertModelMissing($second);
+    }
+
+    /**
+     * @return void
+     */
+    public function testResumeEducationsTableHasExpectedColumns(): void
+    {
+        $this->assertDatabaseTable('resume_educations', [
+            'id' => 'int8',
+            'resume_id' => 'int8',
+            'institution' => 'varchar',
+            'institution_url' => 'varchar',
+            'degree' => 'varchar',
+            'field_of_study' => 'varchar',
+            'location' => 'varchar',
+            'start_date' => 'date',
+            'end_date' => 'date',
+            'description' => 'text',
+            'sort_order' => 'int4',
+            'is_visible' => 'bool',
+            'created_at' => 'timestamp',
+            'updated_at' => 'timestamp',
+        ]);
+    }
+
+    /**
+     * @return void
+     */
+    public function testEducationsAreOrderedAndDeletedWithResume(): void
+    {
+        $resume = Resume::factory()->createOne();
+        $second = ResumeEducation::factory()->createOne(['resume_id' => $resume->id, 'sort_order' => 1]);
+        $first = ResumeEducation::factory()->createOne(['resume_id' => $resume->id, 'sort_order' => 0]);
+
+        $this->assertSame([$first->id, $second->id], $resume->educations()->pluck('id')->all());
 
         $resume->delete();
 

@@ -6,6 +6,7 @@ use App\Containers\AppSection\Resume\Actions\DeleteResumeAction;
 use App\Containers\AppSection\Resume\Actions\UpdateResumeAction;
 use App\Containers\AppSection\Resume\Models\Resume;
 use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\ResumeResource;
+use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Schemas\ResumeEducationsRepeater;
 use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Schemas\ResumeExperiencesRepeater;
 use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Schemas\ResumeLinksRepeater;
 use Filament\Actions\Action;
@@ -45,6 +46,7 @@ final class EditResume extends EditRecord
 
         $data['links'] = ResumeLinksRepeater::stateFrom($resume->load('links')->links);
         $data['experiences'] = ResumeExperiencesRepeater::stateFrom($resume->load('experiences.stacks')->experiences);
+        $data['educations'] = ResumeEducationsRepeater::stateFrom($resume->load('educations')->educations);
 
         return $data;
     }

@@ -3,6 +3,7 @@
 namespace App\Containers\AppSection\Resume\Tests\Functional\Filament\Resources\Resumes\Pages;
 
 use App\Containers\AppSection\Resume\Models\Resume;
+use App\Containers\AppSection\Resume\Models\ResumeEducation;
 use App\Containers\AppSection\Resume\Models\ResumeExperience;
 use App\Containers\AppSection\Resume\Models\ResumeLink;
 use App\Containers\AppSection\Resume\Tests\FunctionalTestCase;
@@ -167,5 +168,47 @@ final class EditResumeTest extends FunctionalTestCase
             ->assertHasNoFormErrors();
 
         $this->assertSame([$php->id], $resume->experiences()->sole()->stacks->modelKeys());
+    }
+
+    /**
+     * @return void
+     */
+    public function testFillsExistingEducationsInSavedOrder(): void
+    {
+        $resume = Resume::factory()->createOne(['user_id' => $this->user->id]);
+        ResumeEducation::factory()->createOne(['resume_id' => $resume->id, 'institution' => 'Braine Academy', 'degree' => 'Бакалавр', 'start_date' => '2016-09-01', 'sort_order' => 1]);
+        ResumeEducation::factory()->createOne(['resume_id' => $resume->id, 'institution' => 'Prometheus', 'sort_order' => 0, 'is_visible' => false]);
+
+        $rows = array_values(Livewire::test(EditResume::class, ['record' => $resume->id])->get('data.educations'));
+
+        $this->assertSame(['Prometheus', 'Braine Academy'], array_column($rows, 'institution'));
+        $this->assertSame('Бакалавр', $rows[1]['degree']);
+        $this->assertStringStartsWith('2016-09-01', $rows[1]['start_date']);
+        $this->assertNull($rows[0]['start_date']);
+        $this->assertFalse($rows[0]['is_visible']);
+    }
+
+    /**
+     * @return void
+     */
+    public function testSavesReorderedAndChangedEducations(): void
+    {
+        $resume = Resume::factory()->createOne(['user_id' => $this->user->id]);
+        ResumeEducation::factory()->createOne(['resume_id' => $resume->id, 'institution' => 'Braine Academy', 'sort_order' => 0]);
+        ResumeEducation::factory()->createOne(['resume_id' => $resume->id, 'institution' => 'Prometheus', 'sort_order' => 1]);
+
+        Livewire::test(EditResume::class, ['record' => $resume->id])
+            ->fillForm(['educations' => [
+                ['institution' => 'Prometheus', 'is_visible' => true],
+                ['institution' => 'KPI', 'start_date' => '2012-09-15', 'end_date' => '2016-06-10', 'is_visible' => false],
+            ]])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $educations = $resume->educations()->get();
+
+        $this->assertSame(['Prometheus', 'KPI'], $educations->pluck('institution')->all());
+        $this->assertSame('2012-09-01', $educations[1]->start_date?->toDateString());
+        $this->assertFalse($educations[1]->is_visible);
     }
 }

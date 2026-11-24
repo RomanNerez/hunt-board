@@ -4,6 +4,7 @@ namespace App\Containers\AppSection\Resume\Tests\Functional\Filament\Resources\R
 
 use App\Containers\AppSection\Resume\Enums\ResumeKind;
 use App\Containers\AppSection\Resume\Models\Resume;
+use App\Containers\AppSection\Resume\Models\ResumeEducation;
 use App\Containers\AppSection\Resume\Models\ResumeExperience;
 use App\Containers\AppSection\Resume\Models\ResumeLink;
 use App\Containers\AppSection\Resume\Tests\FunctionalTestCase;
@@ -292,6 +293,90 @@ final class CreateResumeTest extends FunctionalTestCase
             'довга локація' => [['location' => str_repeat('a', 256)], 'location'],
             'довга адреса' => [['company_url' => 'https://a.com/' . str_repeat('a', 2048)], 'company_url'],
             'невідомий тип' => [['employment_type' => 'unknown'], 'employment_type'],
+        ];
+    }
+
+    /**
+     * @return void
+     */
+    public function testCreatesResumeWithEducations(): void
+    {
+        Livewire::test(CreateResume::class)
+            ->fillForm([
+                'first_name' => 'Роман',
+                'last_name' => 'Нерез',
+                'educations' => [
+                    [
+                        'institution' => 'Braine Academy',
+                        'institution_url' => 'https://brainecollege.com',
+                        'degree' => 'Молодший спеціаліст',
+                        'start_date' => '2016-09-01',
+                        'end_date' => '2020-06-01',
+                        'is_visible' => true,
+                    ],
+                    ['institution' => 'Prometheus', 'field_of_study' => 'PHP', 'is_visible' => false],
+                ],
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $educations = Resume::query()->sole()->educations;
+
+        $this->assertSame(['Braine Academy', 'Prometheus'], $educations->pluck('institution')->all());
+        $this->assertSame('2016-09-01', $educations[0]->start_date?->toDateString());
+        $this->assertNull($educations[1]->start_date);
+        $this->assertNull($educations[1]->end_date);
+        $this->assertFalse($educations[1]->is_visible);
+    }
+
+    /**
+     * @return void
+     */
+    public function testAcceptsEducationWithSingleDate(): void
+    {
+        Livewire::test(CreateResume::class)
+            ->fillForm(['first_name' => 'Роман', 'last_name' => 'Нерез', 'educations' => [['institution' => 'KPI', 'end_date' => '2016-06-01']]])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(1, ResumeEducation::query()->count());
+    }
+
+    /**
+     * @param array<string, mixed> $override
+     * @param string $field
+     *
+     * @return void
+     */
+    #[DataProvider('invalidEducations')]
+    public function testRejectsInvalidEducations(array $override, string $field): void
+    {
+        $education = array_merge(['institution' => 'Braine Academy'], $override);
+
+        Livewire::test(CreateResume::class)
+            ->fillForm(['first_name' => 'Роман', 'last_name' => 'Нерез', 'educations' => [$education]])
+            ->call('create')
+            ->assertHasFormErrors(["educations.0.$field"]);
+
+        $this->assertSame(0, Resume::query()->count());
+        $this->assertSame(0, ResumeEducation::query()->count());
+    }
+
+    /**
+     * @return array<string, array{array<string, mixed>, string}>
+     */
+    public static function invalidEducations(): array
+    {
+        return [
+            'без закладу' => [['institution' => ''], 'institution'],
+            'кінець раніше початку' => [['start_date' => '2020-01-01', 'end_date' => '2019-01-01'], 'end_date'],
+            'javascript' => [['institution_url' => 'javascript:alert(1)'], 'institution_url'],
+            'без схеми' => [['institution_url' => 'brainecollege.com'], 'institution_url'],
+            'довгий заклад' => [['institution' => str_repeat('a', 256)], 'institution'],
+            'довгий ступінь' => [['degree' => str_repeat('a', 256)], 'degree'],
+            'довга спеціальність' => [['field_of_study' => str_repeat('a', 256)], 'field_of_study'],
+            'довга локація' => [['location' => str_repeat('a', 256)], 'location'],
+            'довга адреса' => [['institution_url' => 'https://a.com/' . str_repeat('a', 2048)], 'institution_url'],
         ];
     }
 }

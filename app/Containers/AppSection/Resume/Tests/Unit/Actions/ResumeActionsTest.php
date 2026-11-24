@@ -7,6 +7,7 @@ use App\Containers\AppSection\Resume\Actions\DeleteResumeAction;
 use App\Containers\AppSection\Resume\Actions\UpdateResumeAction;
 use App\Containers\AppSection\Resume\Enums\ResumeKind;
 use App\Containers\AppSection\Resume\Models\Resume;
+use App\Containers\AppSection\Resume\Models\ResumeEducation;
 use App\Containers\AppSection\Resume\Models\ResumeExperience;
 use App\Containers\AppSection\Resume\Models\ResumeLink;
 use App\Containers\AppSection\Resume\Tests\UnitTestCase;
@@ -201,5 +202,55 @@ final class ResumeActionsTest extends UnitTestCase
         app(DeleteResumeAction::class)->run($resume->id);
 
         $this->assertDatabaseCount('stackables', 0);
+    }
+
+    /**
+     * @return void
+     */
+    public function testCreateStoresEducationsInOrder(): void
+    {
+        $user = User::factory()->createOne();
+
+        $resume = app(CreateResumeAction::class)->run($user->id, [
+            'first_name' => 'Роман',
+            'last_name' => 'Нерез',
+            'educations' => [
+                ['institution' => 'Braine Academy'],
+                ['institution' => 'Prometheus'],
+            ],
+        ]);
+
+        $this->assertSame(['Braine Academy', 'Prometheus'], $resume->educations()->pluck('institution')->all());
+    }
+
+    /**
+     * @return void
+     */
+    public function testUpdateReplacesEducationsOnlyWhenKeyIsPresent(): void
+    {
+        $resume = Resume::factory()->createOne();
+        ResumeEducation::factory()->createOne(['resume_id' => $resume->id, 'institution' => 'Braine Academy']);
+
+        app(UpdateResumeAction::class)->run($resume->id, ['first_name' => 'Нове']);
+        $this->assertSame(['Braine Academy'], $resume->educations()->pluck('institution')->all());
+
+        app(UpdateResumeAction::class)->run($resume->id, ['educations' => [['institution' => 'KPI']]]);
+        $this->assertSame(['KPI'], $resume->educations()->pluck('institution')->all());
+    }
+
+    /**
+     * @return void
+     */
+    public function testUpdateRollsBackResumeWhenEducationsFail(): void
+    {
+        $resume = Resume::factory()->createOne(['first_name' => 'Старе']);
+
+        try {
+            app(UpdateResumeAction::class)->run($resume->id, ['first_name' => 'Нове', 'educations' => [['institution' => null]]]);
+            $this->fail('Exception expected');
+        } catch (QueryException) {
+        }
+
+        $this->assertSame('Старе', $resume->refresh()->first_name);
     }
 }
