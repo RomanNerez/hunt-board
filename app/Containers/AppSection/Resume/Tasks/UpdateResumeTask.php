@@ -28,6 +28,6 @@ final class UpdateResumeTask extends ParentTask
      */
     public function run(int $id, array $data): Resume
     {
-        return $this->repository->update(Arr::only($data, ['kind', 'first_name', 'last_name', 'headline', 'summary']), $id);
+        return $this->repository->update(Arr::only($data, ['kind', 'locale', 'first_name', 'last_name', 'headline', 'summary']), $id);
     }
 }

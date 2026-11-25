@@ -14,6 +14,7 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('kind', 20);
+            $table->string('locale', 2)->default('en');
             $table->string('first_name');
             $table->string('last_name');
             $table->string('headline')->nullable();

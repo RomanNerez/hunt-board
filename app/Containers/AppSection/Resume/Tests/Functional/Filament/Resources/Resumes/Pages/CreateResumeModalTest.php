@@ -3,6 +3,7 @@
 namespace App\Containers\AppSection\Resume\Tests\Functional\Filament\Resources\Resumes\Pages;
 
 use App\Containers\AppSection\Resume\Enums\ResumeKind;
+use App\Containers\AppSection\Resume\Enums\ResumeLocale;
 use App\Containers\AppSection\Resume\Models\Resume;
 use App\Containers\AppSection\Resume\Tests\FunctionalTestCase;
 use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Actions\CreateResumeModalAction;
@@ -46,9 +47,22 @@ final class CreateResumeModalTest extends FunctionalTestCase
 
         $this->assertSame($this->user->id, $resume->user_id);
         $this->assertSame(ResumeKind::Master, $resume->kind);
+        $this->assertSame(ResumeLocale::English, $resume->locale);
         $this->assertSame('Роман', $resume->first_name);
         $this->assertNull($resume->headline);
         $this->assertNull($resume->summary);
+    }
+
+    /**
+     * @return void
+     */
+    public function testCreatesResumeWithChosenUkrainianLocale(): void
+    {
+        Livewire::test(ListResumes::class)
+            ->callAction('create', ['first_name' => 'Роман', 'last_name' => 'Нерез', 'locale' => 'uk'])
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(ResumeLocale::Ukrainian, Resume::query()->sole()->locale);
     }
 
     /**
@@ -70,6 +84,8 @@ final class CreateResumeModalTest extends FunctionalTestCase
             ->mountAction('create')
             ->assertSchemaComponentExists('first_name')
             ->assertSchemaComponentExists('last_name')
+            ->assertSchemaComponentExists('locale')
+            ->assertSchemaStateSet(['locale' => ResumeLocale::English])
             ->assertSchemaComponentDoesNotExist('headline')
             ->assertSchemaComponentDoesNotExist('summary');
     }
@@ -83,6 +99,7 @@ final class CreateResumeModalTest extends FunctionalTestCase
             'без імені' => [['first_name' => ''], 'first_name'],
             'без прізвища' => [['last_name' => ''], 'last_name'],
             'задовге імʼя' => [['first_name' => str_repeat('а', 256)], 'first_name'],
+            'недопустима мова' => [['locale' => 'de'], 'locale'],
         ];
     }
 

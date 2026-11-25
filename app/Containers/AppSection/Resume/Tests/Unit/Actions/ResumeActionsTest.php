@@ -43,6 +43,42 @@ final class ResumeActionsTest extends UnitTestCase
     /**
      * @return void
      */
+    public function testCreateWithoutLocaleStoresEnglish(): void
+    {
+        $user = User::factory()->createOne();
+
+        $resume = app(CreateResumeAction::class)->run($user->id, ['first_name' => 'Роман', 'last_name' => 'Нерез']);
+
+        $this->assertDatabaseHas('resumes', ['id' => $resume->id, 'locale' => 'en']);
+    }
+
+    /**
+     * @return void
+     */
+    public function testCreateStoresUkrainianLocale(): void
+    {
+        $user = User::factory()->createOne();
+
+        $resume = app(CreateResumeAction::class)->run($user->id, ['first_name' => 'Роман', 'last_name' => 'Нерез', 'locale' => 'uk']);
+
+        $this->assertDatabaseHas('resumes', ['id' => $resume->id, 'locale' => 'uk']);
+    }
+
+    /**
+     * @return void
+     */
+    public function testUpdateStoresGivenLocale(): void
+    {
+        $resume = Resume::factory()->createOne();
+
+        app(UpdateResumeAction::class)->run($resume->id, ['locale' => 'uk']);
+
+        $this->assertDatabaseHas('resumes', ['id' => $resume->id, 'locale' => 'uk']);
+    }
+
+    /**
+     * @return void
+     */
     public function testUpdateDoesNotChangeOwner(): void
     {
         $resume = Resume::factory()->createOne();

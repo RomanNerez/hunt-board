@@ -2,6 +2,7 @@
 
 namespace App\Containers\AppSection\Resume\Tests\Functional\Filament\Resources\Resumes\Pages;
 
+use App\Containers\AppSection\Resume\Enums\ResumeLocale;
 use App\Containers\AppSection\Resume\Models\Resume;
 use App\Containers\AppSection\Resume\Models\ResumeEducation;
 use App\Containers\AppSection\Resume\Models\ResumeExperience;
@@ -56,6 +57,22 @@ final class EditResumeTest extends FunctionalTestCase
     /**
      * @return void
      */
+    public function testChangesLocaleToUkrainian(): void
+    {
+        $resume = Resume::factory()->createOne(['user_id' => $this->user->id]);
+
+        Livewire::test(EditResume::class, ['record' => $resume->id])
+            ->assertSchemaStateSet(['locale' => ResumeLocale::English])
+            ->fillForm(['locale' => 'uk'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(ResumeLocale::Ukrainian, $resume->refresh()->locale);
+    }
+
+    /**
+     * @return void
+     */
     public function testFormHasOnlyGeneralFields(): void
     {
         $resume = Resume::factory()->createOne(['user_id' => $this->user->id]);
@@ -63,6 +80,7 @@ final class EditResumeTest extends FunctionalTestCase
         Livewire::test(EditResume::class, ['record' => $resume->id])
             ->assertFormFieldExists('first_name')
             ->assertFormFieldExists('last_name')
+            ->assertFormFieldExists('locale')
             ->assertFormFieldExists('headline')
             ->assertFormFieldExists('summary')
             ->assertFormFieldDoesNotExist('links')
@@ -96,7 +114,7 @@ final class EditResumeTest extends FunctionalTestCase
         $items = Livewire::test(EditResume::class, ['record' => $resume->id])->instance()->getSubNavigation();
 
         $this->assertSame(
-            ['Загальне', 'Посилання', 'Досвід', 'Освіта', 'Мови'],
+            ['Загальне', 'Посилання', 'Досвід', 'Освіта', 'Мови', 'Перегляд'],
             array_map(static fn (NavigationItem $item): string => $item->getLabel(), $items),
         );
     }
@@ -110,7 +128,7 @@ final class EditResumeTest extends FunctionalTestCase
 
         $this->get("/admin/resumes/{$resume->id}/languages")
             ->assertOk()
-            ->assertSeeInOrder(['Загальне', 'Посилання', 'Досвід', 'Освіта', 'Мови']);
+            ->assertSeeInOrder(['Загальне', 'Посилання', 'Досвід', 'Освіта', 'Мови', 'Перегляд']);
     }
 
     /**

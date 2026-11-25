@@ -25,7 +25,7 @@ final class ResumeResourceTest extends FunctionalTestCase
     public function testHasIndexAndSectionPagesWithoutCreate(): void
     {
         $this->assertSame(
-            ['index', 'edit', 'links', 'experiences', 'educations', 'languages'],
+            ['index', 'edit', 'links', 'experiences', 'educations', 'languages', 'preview'],
             array_keys(ResumeResource::getPages()),
         );
     }
@@ -51,7 +51,7 @@ final class ResumeResourceTest extends FunctionalTestCase
         $this->get('/admin/resumes')->assertOk()->assertSee('Резюме');
         $this->get('/admin/resumes/create')->assertNotFound();
 
-        foreach (['edit', 'links', 'experiences', 'educations', 'languages'] as $section) {
+        foreach (['edit', 'links', 'experiences', 'educations', 'languages', 'preview'] as $section) {
             $this->get("/admin/resumes/{$resume->id}/{$section}")->assertOk();
         }
     }
@@ -64,7 +64,7 @@ final class ResumeResourceTest extends FunctionalTestCase
         $foreign = Resume::factory()->createOne();
         $this->actingAs(User::factory()->createOne());
 
-        foreach (['edit', 'links', 'experiences', 'educations', 'languages'] as $section) {
+        foreach (['edit', 'links', 'experiences', 'educations', 'languages', 'preview'] as $section) {
             $this->get("/admin/resumes/{$foreign->id}/{$section}")->assertNotFound();
         }
     }

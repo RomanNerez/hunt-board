@@ -22,6 +22,7 @@ final class CreateResumeModalAction
             ->schema([
                 ResumeForm::firstNameInput(),
                 ResumeForm::lastNameInput(),
+                ResumeForm::localeField(),
             ])
             ->using(static function (array $data): Model {
                 /** @var array<string, mixed> $attributes */

@@ -88,6 +88,35 @@ final class ListResumesTest extends FunctionalTestCase
     /**
      * @return void
      */
+    public function testCardHasPreviewEditAndDeleteActions(): void
+    {
+        $resume = Resume::factory()->createOne(['user_id' => $this->user->id]);
+
+        Livewire::test(ListResumes::class)
+            ->assertActionVisible(TestAction::make('preview')->table($resume))
+            ->assertActionVisible(TestAction::make('edit')->table($resume))
+            ->assertActionVisible(TestAction::make('delete')->table($resume));
+    }
+
+    /**
+     * @return void
+     */
+    public function testPreviewOpensFrameWithResumePdfAndPdfActions(): void
+    {
+        $resume = Resume::factory()->createOne(['user_id' => $this->user->id]);
+        $other = Resume::factory()->createOne(['user_id' => $this->user->id]);
+
+        Livewire::test(ListResumes::class)
+            ->mountAction(TestAction::make('preview')->table($resume))
+            ->assertMountedActionModalSeeHtml('src="' . route('resumes.pdf.preview', ['resume' => $resume->id]) . '"')
+            ->assertMountedActionModalDontSeeHtml(route('resumes.pdf.preview', ['resume' => $other->id]))
+            ->assertMountedActionModalSeeHtml('href="' . route('resumes.pdf.download', ['resume' => $resume->id]) . '"')
+            ->assertMountedActionModalSee(['Завантажити PDF', 'Відкрити в новій вкладці']);
+    }
+
+    /**
+     * @return void
+     */
     public function testDeleteRemovesResumeAfterConfirmation(): void
     {
         $resume = Resume::factory()->createOne(['user_id' => $this->user->id]);

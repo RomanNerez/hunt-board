@@ -24,6 +24,7 @@ final class MigrationTest extends UnitTestCase
             'id' => 'int8',
             'user_id' => 'int8',
             'kind' => 'varchar',
+            'locale' => 'varchar',
             'first_name' => 'varchar',
             'last_name' => 'varchar',
             'headline' => 'varchar',

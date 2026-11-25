@@ -2,8 +2,10 @@
 
 namespace App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Schemas;
 
+use App\Containers\AppSection\Resume\Enums\ResumeLocale;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Schemas\Schema;
 
 final class ResumeForm
@@ -20,6 +22,8 @@ final class ResumeForm
             ->components([
                 self::firstNameInput(),
                 self::lastNameInput(),
+                self::localeField()
+                    ->columnSpanFull(),
                 TextInput::make('headline')
                     ->label('Заголовок')
                     ->maxLength(255)
@@ -51,5 +55,18 @@ final class ResumeForm
             ->label('Прізвище')
             ->required()
             ->maxLength(255);
+    }
+
+    /**
+     * @return ToggleButtons
+     */
+    public static function localeField(): ToggleButtons
+    {
+        return ToggleButtons::make('locale')
+            ->label('Мова резюме')
+            ->options(ResumeLocale::class)
+            ->default(ResumeLocale::default())
+            ->required()
+            ->inline();
     }
 }

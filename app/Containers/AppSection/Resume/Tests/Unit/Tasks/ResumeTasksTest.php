@@ -3,6 +3,7 @@
 namespace App\Containers\AppSection\Resume\Tests\Unit\Tasks;
 
 use App\Containers\AppSection\Resume\Enums\ResumeKind;
+use App\Containers\AppSection\Resume\Enums\ResumeLocale;
 use App\Containers\AppSection\Resume\Models\Resume;
 use App\Containers\AppSection\Resume\Tasks\CreateResumeTask;
 use App\Containers\AppSection\Resume\Tasks\DeleteResumeTask;
@@ -33,7 +34,17 @@ final class ResumeTasksTest extends UnitTestCase
 
         $this->assertSame($owner->id, $resume->user_id);
         $this->assertSame(ResumeKind::Application, $resume->kind);
+        $this->assertSame(ResumeLocale::English, $resume->locale);
         $this->assertNull($resume->headline);
+    }
+
+    /**
+     * @return void
+     */
+    public function testFactoryDefaultsToEnglishAndHasUkrainianState(): void
+    {
+        $this->assertSame(ResumeLocale::English, Resume::factory()->createOne()->locale);
+        $this->assertSame(ResumeLocale::Ukrainian, Resume::factory()->ukrainian()->createOne()->refresh()->locale);
     }
 
     /**
@@ -48,10 +59,12 @@ final class ResumeTasksTest extends UnitTestCase
         $updated = app(UpdateResumeTask::class)->run($resume->id, [
             'user_id' => $other->id,
             'kind' => ResumeKind::Application,
+            'locale' => ResumeLocale::Ukrainian,
             'headline' => 'PHP Developer',
         ]);
 
         $this->assertSame($owner, $updated->user_id);
+        $this->assertSame(ResumeLocale::Ukrainian, $updated->locale);
         $this->assertSame(ResumeKind::Application, $updated->kind);
         $this->assertSame('PHP Developer', $updated->headline);
     }

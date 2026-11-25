@@ -29,4 +29,14 @@ enum ResumeLanguageLevel: string implements HasLabel
             self::Native => 'Рідна',
         };
     }
+
+    /**
+     * @param ResumeLocale $locale
+     *
+     * @return string
+     */
+    public function pdfLabel(ResumeLocale $locale): string
+    {
+        return __("appSection@resume::pdf.levels.{$this->value}", locale: $locale->value);
+    }
 }

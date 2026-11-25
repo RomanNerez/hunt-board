@@ -4,6 +4,7 @@ namespace App\Containers\AppSection\Resume\Models;
 
 use App\Containers\AppSection\Resume\Data\Factories\ResumeFactory;
 use App\Containers\AppSection\Resume\Enums\ResumeKind;
+use App\Containers\AppSection\Resume\Enums\ResumeLocale;
 use App\Containers\AppSection\User\Models\User;
 use App\Ship\Parents\Models\Model as ParentModel;
 use Carbon\CarbonImmutable;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $id
  * @property int $user_id
  * @property ResumeKind $kind
+ * @property ResumeLocale $locale
  * @property string $first_name
  * @property string $last_name
  * @property string|null $headline
@@ -37,6 +39,7 @@ final class Resume extends ParentModel
     protected $fillable = [
         'user_id',
         'kind',
+        'locale',
         'first_name',
         'last_name',
         'headline',
@@ -48,6 +51,7 @@ final class Resume extends ParentModel
      */
     protected $casts = [
         'kind' => ResumeKind::class,
+        'locale' => ResumeLocale::class,
     ];
 
     /**

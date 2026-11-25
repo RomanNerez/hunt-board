@@ -25,4 +25,14 @@ enum ResumeEmploymentType: string implements HasLabel
             self::Internship => 'Стажування',
         };
     }
+
+    /**
+     * @param ResumeLocale $locale
+     *
+     * @return string
+     */
+    public function pdfLabel(ResumeLocale $locale): string
+    {
+        return __("appSection@resume::pdf.employment_types.{$this->value}", locale: $locale->value);
+    }
 }

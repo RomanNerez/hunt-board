@@ -9,6 +9,7 @@ use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Pages\EditRes
 use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Pages\EditResumeLanguages;
 use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Pages\EditResumeLinks;
 use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Pages\ListResumes;
+use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Pages\PreviewResume;
 use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Schemas\ResumeForm;
 use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Tables\ResumesTable;
 use Filament\Pages\Page;
@@ -118,6 +119,7 @@ final class ResumeResource extends Resource
             'experiences' => EditResumeExperiences::route('/{record}/experiences'),
             'educations' => EditResumeEducations::route('/{record}/educations'),
             'languages' => EditResumeLanguages::route('/{record}/languages'),
+            'preview' => PreviewResume::route('/{record}/preview'),
         ];
     }
 
@@ -134,6 +136,7 @@ final class ResumeResource extends Resource
             EditResumeExperiences::class,
             EditResumeEducations::class,
             EditResumeLanguages::class,
+            PreviewResume::class,
         ]);
     }
 }

@@ -5,6 +5,7 @@ namespace App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Tables;
 use App\Containers\AppSection\Resume\Actions\DeleteResumeAction;
 use App\Containers\AppSection\Resume\Models\Resume;
 use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Actions\CreateResumeModalAction;
+use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Actions\PreviewResumeAction;
 use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\ResumeResource;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -56,6 +57,7 @@ final class ResumesTable
             ->extraAttributes(['class' => 'hb-resume-cards'])
             ->recordUrl(static fn (Resume $record): string => ResumeResource::getUrl('edit', ['record' => $record]))
             ->recordActions([
+                PreviewResumeAction::make(),
                 EditAction::make()
                     ->iconButton()
                     ->tooltip('Редагувати'),
