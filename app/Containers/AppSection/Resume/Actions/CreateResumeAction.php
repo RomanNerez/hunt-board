@@ -3,6 +3,7 @@
 namespace App\Containers\AppSection\Resume\Actions;
 
 use App\Containers\AppSection\Resume\Models\Resume;
+use App\Containers\AppSection\Resume\Tasks\CreateResumeExperienceProjectsTask;
 use App\Containers\AppSection\Resume\Tasks\CreateResumeTask;
 use App\Containers\AppSection\Resume\Tasks\ReplaceResumeEducationsTask;
 use App\Containers\AppSection\Resume\Tasks\ReplaceResumeExperiencesTask;
@@ -19,6 +20,7 @@ final class CreateResumeAction extends ParentAction
      * @param CreateResumeTask $createResumeTask
      * @param ReplaceResumeLinksTask $replaceResumeLinksTask
      * @param ReplaceResumeExperiencesTask $replaceResumeExperiencesTask
+     * @param CreateResumeExperienceProjectsTask $createResumeExperienceProjectsTask
      * @param SyncStacksTask $syncStacksTask
      * @param ReplaceResumeEducationsTask $replaceResumeEducationsTask
      * @param ReplaceResumeLanguagesTask $replaceResumeLanguagesTask
@@ -27,6 +29,7 @@ final class CreateResumeAction extends ParentAction
         private readonly CreateResumeTask $createResumeTask,
         private readonly ReplaceResumeLinksTask $replaceResumeLinksTask,
         private readonly ReplaceResumeExperiencesTask $replaceResumeExperiencesTask,
+        private readonly CreateResumeExperienceProjectsTask $createResumeExperienceProjectsTask,
         private readonly SyncStacksTask $syncStacksTask,
         private readonly ReplaceResumeEducationsTask $replaceResumeEducationsTask,
         private readonly ReplaceResumeLanguagesTask $replaceResumeLanguagesTask,
@@ -71,11 +74,7 @@ final class CreateResumeAction extends ParentAction
             }
 
             if ($hasExperiences) {
-                $created = $this->replaceResumeExperiencesTask->run($resume, $experiences);
-
-                foreach ($created as $position => $experience) {
-                    $this->syncStacksTask->run($experience, $experiences[$position]['stacks'] ?? []);
-                }
+                $this->replaceExperiences($resume, $experiences);
             }
 
             if ($hasEducations) {
@@ -88,5 +87,27 @@ final class CreateResumeAction extends ParentAction
 
             return $resume;
         });
+    }
+
+    /**
+     * @param Resume $resume
+     * @param list<array<string, mixed>> $experiences
+     *
+     * @return void
+     */
+    private function replaceExperiences(Resume $resume, array $experiences): void
+    {
+        $created = $this->replaceResumeExperiencesTask->run($resume, $experiences);
+
+        foreach ($created as $position => $experience) {
+            /** @var list<array<string, mixed>> $projectsData */
+            $projectsData = array_values(is_array($experiences[$position]['projects'] ?? null) ? $experiences[$position]['projects'] : []);
+
+            $projects = $this->createResumeExperienceProjectsTask->run($experience, $projectsData);
+
+            foreach ($projects as $index => $project) {
+                $this->syncStacksTask->run($project, $projectsData[$index]['stacks'] ?? []);
+            }
+        }
     }
 }

@@ -9,6 +9,7 @@ use App\Containers\AppSection\Resume\Values\Pdf\ResumeDocumentEducation;
 use App\Containers\AppSection\Resume\Values\Pdf\ResumeDocumentExperience;
 use App\Containers\AppSection\Resume\Values\Pdf\ResumeDocumentLanguage;
 use App\Containers\AppSection\Resume\Values\Pdf\ResumeDocumentLink;
+use App\Containers\AppSection\Resume\Values\Pdf\ResumeDocumentProject;
 use PHPUnit\Framework\Attributes\CoversNothing;
 
 #[CoversNothing]
@@ -29,8 +30,11 @@ final class ClassicResumePdfTemplateTest extends FunctionalTestCase
                 new ResumeDocumentLink('Blog', 'https://john.dev', null),
             ],
             experiences: [
-                new ResumeDocumentExperience('Backend Developer', 'MacPaw', 'Jan 2024 – Present', 'Kyiv', 'Full-time', '<ul><li><p>First</p></li></ul>', ['PHP', 'Laravel']),
-                new ResumeDocumentExperience('Junior Developer', 'Grammarly', 'Mar 2021 – Dec 2023', null, null, null, []),
+                new ResumeDocumentExperience('Senior Full Stack Developer', 'GiraffeSoftware', 'Sep 2024 – Apr 2026', 'Remote', 'Full-time', [
+                    new ResumeDocumentProject('Equally', 'Tech Lead', '<ul><li><p>First</p></li></ul>', ['PHP', 'Laravel']),
+                    new ResumeDocumentProject('Impacta', null, null, []),
+                ]),
+                new ResumeDocumentExperience('Junior Developer', 'Grammarly', 'Mar 2021 – Dec 2023', null, null, []),
             ],
             educations: [new ResumeDocumentEducation('KPI', 'Bachelor, Computer Science', '2015 – 2019', '<p>With honours</p>')],
             languages: [new ResumeDocumentLanguage('English (Fluent)'), new ResumeDocumentLanguage('Ukrainian (Native)')],
@@ -49,15 +53,20 @@ final class ClassicResumePdfTemplateTest extends FunctionalTestCase
             'Summary',
             'Building web applications.',
             'Work Experience',
-            '<div class="card__organization">MacPaw</div>',
-            '<div class="card__role">Backend Developer</div>',
-            '<span class="card__meta">Kyiv · Full-time</span>',
+            '<span class="card__role">Senior Full Stack Developer</span>',
             '<span class="card__separator">|</span>',
-            '<span class="card__period">Jan 2024 – Present</span>',
+            '<span class="card__organization">GiraffeSoftware</span>',
+            '<span class="card__meta">Remote · Full-time</span>',
+            '<span class="card__separator">|</span>',
+            '<span class="card__period">Sep 2024 – Apr 2026</span>',
+            '<div class="card__project-name">Equally</div>',
+            'Role:</strong> Tech Lead',
             '<li><p>First</p></li>',
             'Tech Stack:</strong> PHP, Laravel',
-            'Grammarly',
-            'Junior Developer',
+            '<div class="card__project-name">Impacta</div>',
+            '<span class="card__role">Junior Developer</span>',
+            '<span class="card__organization">Grammarly</span>',
+            '<span class="card__period">Mar 2021 – Dec 2023</span>',
             'Education',
             'KPI',
             'Bachelor, Computer Science (2015 – 2019)',
@@ -66,9 +75,13 @@ final class ClassicResumePdfTemplateTest extends FunctionalTestCase
             'English (Fluent)',
             'Ukrainian (Native)',
         ], $html);
-        $this->assertSame(1, substr_count($html, 'Tech Stack:'));
-        $this->assertSame(1, substr_count($html, 'class="card__meta"'));
-        $this->assertSame(1, substr_count($html, 'class="card__separator"'));
+        $body = $this->body($html);
+        $this->assertSame(1, substr_count($body, 'Tech Stack:'));
+        $this->assertSame(1, substr_count($body, 'Role:'));
+        $this->assertSame(1, substr_count($body, 'class="card__meta"'));
+        $this->assertSame(3, substr_count($body, 'class="card__separator"'));
+        $this->assertSame(2, substr_count($body, 'class="card__project"'));
+        $this->assertSame(1, substr_count($body, 'class="card__description"'));
     }
 
     /**
@@ -107,13 +120,15 @@ final class ClassicResumePdfTemplateTest extends FunctionalTestCase
             headline: null,
             summary: 'Пишу код.',
             links: [],
-            experiences: [new ResumeDocumentExperience('Розробник', 'MacPaw', 'Січ 2024 – Дотепер', null, null, null, ['PHP'])],
+            experiences: [new ResumeDocumentExperience('Розробник', 'MacPaw', 'Січ 2024 – Дотепер', null, null, [
+                new ResumeDocumentProject('Equally', 'Tech Lead', null, ['PHP']),
+            ])],
             educations: [new ResumeDocumentEducation('КПІ', null, null, null)],
             languages: [new ResumeDocumentLanguage('Англійська (B2 Вище середнього)')],
             fileName: 'Roman_Nerez_CV_UA.pdf',
         ));
 
-        $this->assertSeeInOrder(['Про мене', 'Пишу код.', 'Досвід роботи', 'Січ 2024 – Дотепер', 'Технології:', 'Освіта', 'КПІ', 'Мови', 'Англійська (B2 Вище середнього)'], $html);
+        $this->assertSeeInOrder(['Про мене', 'Пишу код.', 'Досвід роботи', 'Січ 2024 – Дотепер', 'Equally', 'Роль:</strong> Tech Lead', 'Технології:</strong> PHP', 'Освіта', 'КПІ', 'Мови', 'Англійська (B2 Вище середнього)'], $html);
         $this->assertStringNotContainsString('education__meta', $this->body($html));
     }
 

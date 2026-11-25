@@ -6,6 +6,7 @@ use App\Containers\AppSection\Resume\Enums\ResumeLocale;
 use App\Containers\AppSection\Resume\Models\Resume;
 use App\Containers\AppSection\Resume\Models\ResumeEducation;
 use App\Containers\AppSection\Resume\Models\ResumeExperience;
+use App\Containers\AppSection\Resume\Models\ResumeExperienceProject;
 use App\Containers\AppSection\Resume\Models\ResumeLanguage;
 use App\Containers\AppSection\Resume\Models\ResumeLink;
 use App\Containers\AppSection\Resume\Support\ResumeLinkIcon;
@@ -14,6 +15,7 @@ use App\Containers\AppSection\Resume\Values\Pdf\ResumeDocumentEducation;
 use App\Containers\AppSection\Resume\Values\Pdf\ResumeDocumentExperience;
 use App\Containers\AppSection\Resume\Values\Pdf\ResumeDocumentLanguage;
 use App\Containers\AppSection\Resume\Values\Pdf\ResumeDocumentLink;
+use App\Containers\AppSection\Resume\Values\Pdf\ResumeDocumentProject;
 use App\Containers\AppSection\Stack\Models\Stack;
 use App\Ship\Parents\Tasks\Task as ParentTask;
 use Carbon\CarbonImmutable;
@@ -97,8 +99,32 @@ final class BuildResumeDocumentTask extends ParentTask
                 period: $this->period($experience->start_date, $experience->end_date, $locale),
                 location: $this->filled($experience->location),
                 employmentType: $experience->employment_type?->pdfLabel($locale),
-                descriptionHtml: $this->html($experience->description),
-                stack: $this->stackNames($experience->stacks),
+                projects: $this->projects($experience->projects),
+            );
+        }
+
+        return $items;
+    }
+
+    /**
+     * @param Collection<int, ResumeExperienceProject> $projects
+     *
+     * @return list<ResumeDocumentProject>
+     */
+    private function projects(Collection $projects): array
+    {
+        $items = [];
+
+        foreach ($projects as $project) {
+            if (!$project->is_visible) {
+                continue;
+            }
+
+            $items[] = new ResumeDocumentProject(
+                name: trim($project->name),
+                role: $this->filled($project->role),
+                descriptionHtml: $this->html($project->description),
+                stack: $this->stackNames($project->stacks),
             );
         }
 

@@ -8,6 +8,7 @@ return [
         'languages' => 'Мови',
     ],
     'present' => 'Дотепер',
+    'role' => 'Роль',
     'tech_stack' => 'Технології',
     'levels' => [
         'a1' => 'A1 Початковий',

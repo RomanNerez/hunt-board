@@ -4,13 +4,11 @@ namespace App\Containers\AppSection\Resume\Models;
 
 use App\Containers\AppSection\Resume\Data\Factories\ResumeExperienceFactory;
 use App\Containers\AppSection\Resume\Enums\ResumeEmploymentType;
-use App\Containers\AppSection\Stack\Models\Concerns\HasStacks;
-use App\Containers\AppSection\Stack\Models\Contracts\Stackable;
-use App\Containers\AppSection\Stack\Models\Stack;
 use App\Ship\Parents\Models\Model as ParentModel;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
@@ -22,20 +20,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property ResumeEmploymentType|null $employment_type
  * @property CarbonImmutable $start_date
  * @property CarbonImmutable|null $end_date
- * @property string|null $description
  * @property int $sort_order
  * @property bool $is_visible
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  * @property Resume $resume
- * @property Collection<int, Stack> $stacks
+ * @property Collection<int, ResumeExperienceProject> $projects
  *
  * @method static ResumeExperienceFactory<self> factory(int|null $count = null, array<string, mixed> $state = [])
  */
-final class ResumeExperience extends ParentModel implements Stackable
+final class ResumeExperience extends ParentModel
 {
-    use HasStacks;
-
     /**
      * @var list<string>
      */
@@ -48,7 +43,6 @@ final class ResumeExperience extends ParentModel implements Stackable
         'employment_type',
         'start_date',
         'end_date',
-        'description',
         'sort_order',
         'is_visible',
     ];
@@ -70,5 +64,13 @@ final class ResumeExperience extends ParentModel implements Stackable
     public function resume(): BelongsTo
     {
         return $this->belongsTo(Resume::class);
+    }
+
+    /**
+     * @return HasMany<ResumeExperienceProject, $this>
+     */
+    public function projects(): HasMany
+    {
+        return $this->hasMany(ResumeExperienceProject::class)->orderBy('sort_order');
     }
 }

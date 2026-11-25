@@ -8,6 +8,7 @@ use App\Containers\AppSection\Resume\Enums\ResumeLocale;
 use App\Containers\AppSection\Resume\Models\Resume;
 use App\Containers\AppSection\Resume\Models\ResumeEducation;
 use App\Containers\AppSection\Resume\Models\ResumeExperience;
+use App\Containers\AppSection\Resume\Models\ResumeExperienceProject;
 use App\Containers\AppSection\Resume\Models\ResumeLanguage;
 use App\Containers\AppSection\Resume\Models\ResumeLink;
 use App\Containers\AppSection\Resume\Tasks\BuildResumeDocumentTask;
@@ -17,6 +18,7 @@ use App\Containers\AppSection\Resume\Values\Pdf\ResumeDocument;
 use App\Containers\AppSection\Resume\Values\Pdf\ResumeDocumentExperience;
 use App\Containers\AppSection\Resume\Values\Pdf\ResumeDocumentLanguage;
 use App\Containers\AppSection\Resume\Values\Pdf\ResumeDocumentLink;
+use App\Containers\AppSection\Resume\Values\Pdf\ResumeDocumentProject;
 use App\Containers\AppSection\Stack\Models\Stack;
 use PHPUnit\Framework\Attributes\CoversClass;
 
@@ -124,7 +126,7 @@ final class BuildResumeDocumentTaskTest extends UnitTestCase
     public function testEnglishExperienceUsesEnglishLabelsAndKeepsUserContent(): void
     {
         $resume = Resume::factory()->createOne();
-        $experience = ResumeExperience::factory()->createOne([
+        ResumeExperience::factory()->createOne([
             'resume_id' => $resume->id,
             'company' => 'MacPaw',
             'position' => 'Backend Developer',
@@ -132,11 +134,7 @@ final class BuildResumeDocumentTaskTest extends UnitTestCase
             'employment_type' => ResumeEmploymentType::FullTime,
             'start_date' => '2024-01-01',
             'end_date' => null,
-            'description' => '<ul><li><p>Перший</p></li></ul>',
         ]);
-        $laravel = Stack::factory()->createOne(['name' => 'Laravel']);
-        $php = Stack::factory()->createOne(['name' => 'PHP']);
-        $experience->stacks()->attach([$laravel->id => ['sort' => 0], $php->id => ['sort' => 1]]);
 
         $item = $this->build($resume)->experiences[0];
 
@@ -145,9 +143,39 @@ final class BuildResumeDocumentTaskTest extends UnitTestCase
         $this->assertSame('Jan 2024 – Present', $item->period);
         $this->assertSame('Київ', $item->location);
         $this->assertSame('Full-time', $item->employmentType);
-        $this->assertNotNull($item->descriptionHtml);
-        $this->assertStringContainsString('<li><p>Перший</p></li>', $item->descriptionHtml);
-        $this->assertSame(['Laravel', 'PHP'], $item->stack);
+        $this->assertSame([], $item->projects);
+    }
+
+    /**
+     * @return void
+     */
+    public function testVisibleProjectsKeepOrderDescriptionAndStackNames(): void
+    {
+        $resume = Resume::factory()->createOne();
+        $experience = ResumeExperience::factory()->createOne(['resume_id' => $resume->id]);
+        ResumeExperienceProject::factory()->createOne(['resume_experience_id' => $experience->id, 'name' => 'Impacta', 'role' => ' ', 'description' => '<p></p>', 'sort_order' => 1]);
+        ResumeExperienceProject::factory()->createOne(['resume_experience_id' => $experience->id, 'name' => 'PippoSAS', 'sort_order' => 2, 'is_visible' => false]);
+        $equally = ResumeExperienceProject::factory()->createOne([
+            'resume_experience_id' => $experience->id,
+            'name' => 'Equally',
+            'role' => 'Tech Lead',
+            'description' => '<ul><li><p>Перший</p></li></ul>',
+            'sort_order' => 0,
+        ]);
+        $laravel = Stack::factory()->createOne(['name' => 'Laravel']);
+        $php = Stack::factory()->createOne(['name' => 'PHP']);
+        $equally->stacks()->attach([$laravel->id => ['sort' => 0], $php->id => ['sort' => 1]]);
+
+        [$first, $second] = $projects = $this->build($resume)->experiences[0]->projects;
+
+        $this->assertSame(['Equally', 'Impacta'], array_map(static fn (ResumeDocumentProject $project): string => $project->name, $projects));
+        $this->assertSame('Tech Lead', $first->role);
+        $this->assertNotNull($first->descriptionHtml);
+        $this->assertStringContainsString('<li><p>Перший</p></li>', $first->descriptionHtml);
+        $this->assertSame(['Laravel', 'PHP'], $first->stack);
+        $this->assertNull($second->role);
+        $this->assertNull($second->descriptionHtml);
+        $this->assertSame([], $second->stack);
     }
 
     /**

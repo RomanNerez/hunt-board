@@ -8,6 +8,7 @@ return [
         'languages' => 'Languages',
     ],
     'present' => 'Present',
+    'role' => 'Role',
     'tech_stack' => 'Tech Stack',
     'levels' => [
         'a1' => 'A1 Beginner',

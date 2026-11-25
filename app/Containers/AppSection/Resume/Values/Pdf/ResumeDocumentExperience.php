@@ -12,8 +12,7 @@ final readonly class ResumeDocumentExperience extends ParentValue
      * @param string $period
      * @param string|null $location
      * @param string|null $employmentType
-     * @param string|null $descriptionHtml
-     * @param list<string> $stack
+     * @param list<ResumeDocumentProject> $projects
      */
     public function __construct(
         public string $position,
@@ -21,8 +20,7 @@ final readonly class ResumeDocumentExperience extends ParentValue
         public string $period,
         public string|null $location,
         public string|null $employmentType,
-        public string|null $descriptionHtml,
-        public array $stack,
+        public array $projects,
     ) {
     }
 }

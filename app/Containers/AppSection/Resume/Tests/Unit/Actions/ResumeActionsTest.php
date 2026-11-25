@@ -9,6 +9,7 @@ use App\Containers\AppSection\Resume\Enums\ResumeKind;
 use App\Containers\AppSection\Resume\Models\Resume;
 use App\Containers\AppSection\Resume\Models\ResumeEducation;
 use App\Containers\AppSection\Resume\Models\ResumeExperience;
+use App\Containers\AppSection\Resume\Models\ResumeExperienceProject;
 use App\Containers\AppSection\Resume\Models\ResumeLanguage;
 use App\Containers\AppSection\Resume\Models\ResumeLink;
 use App\Containers\AppSection\Resume\Tests\UnitTestCase;
@@ -206,39 +207,113 @@ final class ResumeActionsTest extends UnitTestCase
     /**
      * @return void
      */
-    public function testExperiencesKeepStacksInOrderAndReplaceDoesNotLeavePivotRows(): void
+    public function testCreateStoresExperienceProjectsWithStacks(): void
+    {
+        $php = Stack::factory()->createOne();
+        $user = User::factory()->createOne();
+
+        $resume = app(CreateResumeAction::class)->run($user->id, [
+            'first_name' => 'Роман',
+            'last_name' => 'Нерез',
+            'experiences' => [
+                ['company' => 'MacPaw', 'position' => 'Dev', 'start_date' => '2021-03-01', 'projects' => [
+                    ['name' => 'Equally', 'stacks' => [$php->id]],
+                ]],
+            ],
+        ]);
+
+        $project = $resume->experiences()->sole()->projects()->sole();
+
+        $this->assertSame('Equally', $project->name);
+        $this->assertSame([$php->id], $project->stacks->modelKeys());
+    }
+
+    /**
+     * @return void
+     */
+    public function testUpdateReplacesProjectsKeepsStackOrderAndLeavesNoPivotRows(): void
     {
         $php = Stack::factory()->createOne();
         $laravel = Stack::factory()->createOne();
         $resume = Resume::factory()->createOne();
 
         $action = app(UpdateResumeAction::class);
+        $experience = ['company' => 'MacPaw', 'position' => 'Dev', 'start_date' => '2021-03-01'];
 
-        $action->run($resume->id, ['experiences' => [
-            ['company' => 'MacPaw', 'position' => 'Dev', 'start_date' => '2021-03-01', 'stacks' => [$laravel->id, $php->id]],
-        ]]);
-        $this->assertSame([$laravel->id, $php->id], $resume->experiences()->sole()->stacks->modelKeys());
+        $action->run($resume->id, ['experiences' => [$experience + ['projects' => [
+            ['name' => 'Equally', 'stacks' => [$laravel->id, $php->id]],
+            ['name' => 'PippoSAS', 'stacks' => [$php->id]],
+        ]]]]);
 
-        $action->run($resume->id, ['experiences' => [
-            ['company' => 'MacPaw', 'position' => 'Dev', 'start_date' => '2021-03-01', 'stacks' => [$php->id]],
-        ]]);
+        $projects = $resume->experiences()->sole()->projects()->with('stacks')->get();
+        $this->assertSame(['Equally', 'PippoSAS'], $projects->pluck('name')->all());
+        $this->assertSame([$laravel->id, $php->id], $projects[0]->stacks->modelKeys());
 
-        $this->assertSame([$php->id], $resume->experiences()->sole()->stacks->modelKeys());
+        $action->run($resume->id, ['experiences' => [$experience + ['projects' => [
+            ['name' => 'Equally', 'stacks' => [$php->id]],
+            ['name' => 'Impacta'],
+        ]]]]);
+
+        $projects = $resume->experiences()->sole()->projects()->with('stacks')->get();
+        $this->assertSame(['Equally', 'Impacta'], $projects->pluck('name')->all());
+        $this->assertSame([$php->id], $projects[0]->stacks->modelKeys());
+        $this->assertDatabaseCount('resume_experience_projects', 2);
         $this->assertDatabaseCount('stackables', 1);
     }
 
     /**
      * @return void
      */
-    public function testDeleteRemovesExperienceStacks(): void
+    public function testUpdateWithoutExperiencesKeyKeepsProjects(): void
     {
         $resume = Resume::factory()->createOne();
-        $experience = ResumeExperience::factory()->createOne(['resume_id' => $resume->id]);
-        $experience->stacks()->attach(Stack::factory()->createOne()->id, ['sort' => 0]);
+        $project = ResumeExperienceProject::factory()->createOne([
+            'resume_experience_id' => ResumeExperience::factory()->createOne(['resume_id' => $resume->id])->id,
+        ]);
+
+        app(UpdateResumeAction::class)->run($resume->id, ['first_name' => 'Нове']);
+
+        $this->assertModelExists($project);
+    }
+
+    /**
+     * @return void
+     */
+    public function testUpdateRollsBackExperiencesWhenProjectsFail(): void
+    {
+        $resume = Resume::factory()->createOne();
+        ResumeExperience::factory()->createOne(['resume_id' => $resume->id, 'company' => 'MacPaw']);
+
+        try {
+            app(UpdateResumeAction::class)->run($resume->id, ['experiences' => [
+                ['company' => 'Preply', 'position' => 'Dev', 'start_date' => '2022-05-01', 'projects' => [['name' => null]]],
+            ]]);
+            $this->fail('Exception expected');
+        } catch (QueryException) {
+        }
+
+        $this->assertSame(['MacPaw'], $resume->experiences()->pluck('company')->all());
+    }
+
+    /**
+     * @return void
+     */
+    public function testDeleteRemovesProjectStacks(): void
+    {
+        $stack = Stack::factory()->createOne();
+        $resume = Resume::factory()->createOne();
+        $project = ResumeExperienceProject::factory()->createOne([
+            'resume_experience_id' => ResumeExperience::factory()->createOne(['resume_id' => $resume->id])->id,
+        ]);
+        $project->stacks()->attach($stack->id, ['sort' => 0]);
+        $otherProject = ResumeExperienceProject::factory()->createOne();
+        $otherProject->stacks()->attach($stack->id, ['sort' => 0]);
 
         app(DeleteResumeAction::class)->run($resume->id);
 
-        $this->assertDatabaseCount('stackables', 0);
+        $this->assertModelMissing($project);
+        $this->assertDatabaseMissing('stackables', ['stackable_type' => $project->getMorphClass(), 'stackable_id' => $project->id]);
+        $this->assertDatabaseCount('stackables', 1);
     }
 
     /**

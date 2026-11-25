@@ -20,7 +20,6 @@ return new class extends Migration {
             $table->string('employment_type', 20)->nullable();
             $table->date('start_date');
             $table->date('end_date')->nullable();
-            $table->text('description')->nullable();
             $table->unsignedInteger('sort_order')->default(0);
             $table->boolean('is_visible')->default(true);
             $table->timestamps();

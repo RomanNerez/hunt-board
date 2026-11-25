@@ -4,6 +4,7 @@ namespace App\Containers\AppSection\Resume\Tasks;
 
 use App\Containers\AppSection\Resume\Models\Resume;
 use App\Containers\AppSection\Resume\Models\ResumeExperience;
+use App\Containers\AppSection\Resume\Models\ResumeExperienceProject;
 use App\Ship\Parents\Tasks\Task as ParentTask;
 use Carbon\CarbonImmutable;
 
@@ -17,7 +18,9 @@ final class ReplaceResumeExperiencesTask extends ParentTask
      */
     public function run(Resume $resume, array $experiences): array
     {
-        ResumeExperience::detachStacksFrom($resume->experiences()->getQuery());
+        ResumeExperienceProject::detachStacksFrom(
+            ResumeExperienceProject::query()->whereIn('resume_experience_id', $resume->experiences()->select('id')),
+        );
         $resume->experiences()->delete();
 
         $created = [];
@@ -31,7 +34,6 @@ final class ReplaceResumeExperiencesTask extends ParentTask
                 'employment_type' => $this->text($experience, 'employment_type'),
                 'start_date' => $this->month($experience['start_date']),
                 'end_date' => $this->month($experience['end_date'] ?? null),
-                'description' => $this->text($experience, 'description'),
                 'sort_order' => $position,
                 'is_visible' => (bool) ($experience['is_visible'] ?? true),
             ]);

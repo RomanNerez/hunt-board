@@ -14,7 +14,7 @@ final class FindUserResumeTask extends ParentTask
      */
     private const RELATIONS = [
         'links',
-        'experiences.stacks',
+        'experiences.projects.stacks',
         'educations',
         'languages',
     ];

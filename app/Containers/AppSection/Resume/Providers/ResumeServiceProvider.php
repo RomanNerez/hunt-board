@@ -2,7 +2,7 @@
 
 namespace App\Containers\AppSection\Resume\Providers;
 
-use App\Containers\AppSection\Resume\Models\ResumeExperience;
+use App\Containers\AppSection\Resume\Models\ResumeExperienceProject;
 use App\Ship\Parents\Providers\ServiceProvider as ParentServiceProvider;
 use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
@@ -20,7 +20,7 @@ final class ResumeServiceProvider extends ParentServiceProvider
         ]);
 
         Relation::morphMap([
-            'resume_experience' => ResumeExperience::class,
+            'resume_experience_project' => ResumeExperienceProject::class,
         ]);
     }
 }

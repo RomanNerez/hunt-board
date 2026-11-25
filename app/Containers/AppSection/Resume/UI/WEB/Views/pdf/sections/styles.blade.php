@@ -116,17 +116,17 @@
         gap: 4mm;
     }
 
-    .card__organization {
-        color: #0f172a;
-        font-size: 11.5pt;
+    .card__title {
+        font-size: 11pt;
         font-weight: 700;
     }
 
+    .card__organization {
+        color: #0f172a;
+    }
+
     .card__role {
-        margin-top: 0.5mm;
         color: #0369a1;
-        font-size: 10.5pt;
-        font-weight: 700;
     }
 
     .card__aside {
@@ -149,6 +149,28 @@
         margin: 0 1mm;
         color: #cbd5e1;
         font-size: 9.5pt;
+    }
+
+    .card__project {
+        margin-top: 2mm;
+        padding-top: 1.5mm;
+        border-top: 0.3mm solid #f1f5f9;
+    }
+
+    .card__project-name {
+        color: #0f172a;
+        font-size: 10.5pt;
+        font-weight: 700;
+    }
+
+    .card__project-role {
+        margin-top: 0.5mm;
+        color: #475569;
+        font-size: 9.5pt;
+    }
+
+    .card__project-role strong {
+        color: #334155;
     }
 
     .card__description {

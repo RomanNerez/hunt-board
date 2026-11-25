@@ -5,6 +5,7 @@ namespace App\Containers\AppSection\Resume\Tests\Unit\Data;
 use App\Containers\AppSection\Resume\Models\Resume;
 use App\Containers\AppSection\Resume\Models\ResumeEducation;
 use App\Containers\AppSection\Resume\Models\ResumeExperience;
+use App\Containers\AppSection\Resume\Models\ResumeExperienceProject;
 use App\Containers\AppSection\Resume\Models\ResumeLanguage;
 use App\Containers\AppSection\Resume\Models\ResumeLink;
 use App\Containers\AppSection\Resume\Tests\UnitTestCase;
@@ -102,7 +103,6 @@ final class MigrationTest extends UnitTestCase
             'employment_type' => 'varchar',
             'start_date' => 'date',
             'end_date' => 'date',
-            'description' => 'text',
             'sort_order' => 'int4',
             'is_visible' => 'bool',
             'created_at' => 'timestamp',
@@ -125,6 +125,43 @@ final class MigrationTest extends UnitTestCase
 
         $this->assertModelMissing($first);
         $this->assertModelMissing($second);
+    }
+
+    /**
+     * @return void
+     */
+    public function testResumeExperienceProjectsTableHasExpectedColumns(): void
+    {
+        $this->assertDatabaseTable('resume_experience_projects', [
+            'id' => 'int8',
+            'resume_experience_id' => 'int8',
+            'name' => 'varchar',
+            'role' => 'varchar',
+            'description' => 'text',
+            'sort_order' => 'int4',
+            'is_visible' => 'bool',
+            'created_at' => 'timestamp',
+            'updated_at' => 'timestamp',
+        ]);
+    }
+
+    /**
+     * @return void
+     */
+    public function testProjectsAreOrderedAndDeletedWithExperienceAndResume(): void
+    {
+        $experience = ResumeExperience::factory()->createOne();
+        $second = ResumeExperienceProject::factory()->createOne(['resume_experience_id' => $experience->id, 'sort_order' => 1]);
+        $first = ResumeExperienceProject::factory()->createOne(['resume_experience_id' => $experience->id, 'sort_order' => 0]);
+        $other = ResumeExperienceProject::factory()->createOne();
+
+        $this->assertSame([$first->id, $second->id], $experience->projects()->pluck('id')->all());
+
+        $experience->resume->delete();
+
+        $this->assertModelMissing($first);
+        $this->assertModelMissing($second);
+        $this->assertModelExists($other);
     }
 
     /**

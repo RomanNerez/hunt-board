@@ -32,7 +32,6 @@ final class ResumeExperienceFactory extends ParentFactory
             'employment_type' => null,
             'start_date' => '2021-03-01',
             'end_date' => null,
-            'description' => null,
             'sort_order' => 0,
             'is_visible' => true,
         ];

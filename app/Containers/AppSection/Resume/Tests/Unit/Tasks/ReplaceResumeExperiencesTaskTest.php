@@ -5,8 +5,10 @@ namespace App\Containers\AppSection\Resume\Tests\Unit\Tasks;
 use App\Containers\AppSection\Resume\Enums\ResumeEmploymentType;
 use App\Containers\AppSection\Resume\Models\Resume;
 use App\Containers\AppSection\Resume\Models\ResumeExperience;
+use App\Containers\AppSection\Resume\Models\ResumeExperienceProject;
 use App\Containers\AppSection\Resume\Tasks\ReplaceResumeExperiencesTask;
 use App\Containers\AppSection\Resume\Tests\UnitTestCase;
+use App\Containers\AppSection\Stack\Models\Stack;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 #[CoversClass(ReplaceResumeExperiencesTask::class)]
@@ -29,7 +31,6 @@ final class ReplaceResumeExperiencesTaskTest extends UnitTestCase
                 'employment_type' => 'full_time',
                 'start_date' => '2021-03-17',
                 'end_date' => '2024-08-20',
-                'description' => 'Опис',
                 'is_visible' => false,
             ],
             [
@@ -40,7 +41,6 @@ final class ReplaceResumeExperiencesTaskTest extends UnitTestCase
                 'employment_type' => null,
                 'start_date' => '2019-01-01',
                 'end_date' => null,
-                'description' => '',
             ],
         ]);
 
@@ -56,7 +56,6 @@ final class ReplaceResumeExperiencesTaskTest extends UnitTestCase
         $this->assertNull($experiences[1]->company_url);
         $this->assertNull($experiences[1]->location);
         $this->assertNull($experiences[1]->employment_type);
-        $this->assertNull($experiences[1]->description);
     }
 
     /**
@@ -70,5 +69,27 @@ final class ReplaceResumeExperiencesTaskTest extends UnitTestCase
         app(ReplaceResumeExperiencesTask::class)->run($resume, []);
 
         $this->assertModelExists($other);
+    }
+
+    /**
+     * @return void
+     */
+    public function testRemovesProjectsAndTheirStacksOnlyOfThisResume(): void
+    {
+        $stack = Stack::factory()->createOne();
+        $resume = Resume::factory()->createOne();
+        $project = ResumeExperienceProject::factory()->createOne([
+            'resume_experience_id' => ResumeExperience::factory()->createOne(['resume_id' => $resume->id])->id,
+        ]);
+        $project->stacks()->attach($stack->id, ['sort' => 0]);
+        $otherProject = ResumeExperienceProject::factory()->createOne();
+        $otherProject->stacks()->attach($stack->id, ['sort' => 0]);
+
+        app(ReplaceResumeExperiencesTask::class)->run($resume, []);
+
+        $this->assertModelMissing($project);
+        $this->assertModelExists($otherProject);
+        $this->assertDatabaseMissing('stackables', ['stackable_type' => $project->getMorphClass(), 'stackable_id' => $project->id]);
+        $this->assertDatabaseHas('stackables', ['stackable_type' => $otherProject->getMorphClass(), 'stackable_id' => $otherProject->id]);
     }
 }

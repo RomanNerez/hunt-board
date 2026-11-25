@@ -6,6 +6,7 @@ use Apiato\Core\Repositories\Exceptions\ResourceNotFound;
 use App\Containers\AppSection\Resume\Data\Repositories\ResumeRepository;
 use App\Containers\AppSection\Resume\Models\Resume;
 use App\Containers\AppSection\Resume\Models\ResumeExperience;
+use App\Containers\AppSection\Resume\Models\ResumeExperienceProject;
 use App\Ship\Parents\Tasks\Task as ParentTask;
 use Prettus\Repository\Exceptions\RepositoryException;
 
@@ -29,7 +30,9 @@ final class DeleteResumeTask extends ParentTask
      */
     public function run(int $id): bool
     {
-        ResumeExperience::detachStacksFrom(ResumeExperience::query()->where('resume_id', $id));
+        ResumeExperienceProject::detachStacksFrom(
+            ResumeExperienceProject::query()->whereIn('resume_experience_id', ResumeExperience::query()->where('resume_id', $id)->select('id')),
+        );
 
         return $this->repository->delete($id);
     }

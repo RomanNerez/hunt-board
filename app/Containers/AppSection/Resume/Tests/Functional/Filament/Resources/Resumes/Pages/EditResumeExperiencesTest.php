@@ -4,6 +4,7 @@ namespace App\Containers\AppSection\Resume\Tests\Functional\Filament\Resources\R
 
 use App\Containers\AppSection\Resume\Models\Resume;
 use App\Containers\AppSection\Resume\Models\ResumeExperience;
+use App\Containers\AppSection\Resume\Models\ResumeExperienceProject;
 use App\Containers\AppSection\Resume\Tests\FunctionalTestCase;
 use App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Pages\EditResumeExperiences;
 use App\Containers\AppSection\Stack\Models\Stack;
@@ -77,26 +78,116 @@ final class EditResumeExperiencesTest extends FunctionalTestCase
     /**
      * @return void
      */
-    public function testFillsAndSavesExperienceStacks(): void
+    public function testExperienceFormHasNoDescriptionAndStacksFields(): void
+    {
+        $resume = Resume::factory()->createOne(['user_id' => $this->user->id]);
+        ResumeExperience::factory()->createOne(['resume_id' => $resume->id]);
+
+        $component = Livewire::test(EditResumeExperiences::class, ['record' => $resume->id]);
+        $rows = array_values($component->get('data.experiences'));
+
+        $this->assertArrayNotHasKey('description', $rows[0]);
+        $this->assertArrayNotHasKey('stacks', $rows[0]);
+        $this->assertSame([], $rows[0]['projects']);
+        $component->assertDontSeeHtml('Опис ролі')->assertDontSeeHtml('Технології')->assertSeeHtml('Додати проєкт');
+    }
+
+    /**
+     * @return void
+     */
+    public function testFillsExistingProjectsInSavedOrder(): void
     {
         $php = Stack::factory()->createOne();
         $vue = Stack::factory()->createOne();
         $resume = Resume::factory()->createOne(['user_id' => $this->user->id]);
         $experience = ResumeExperience::factory()->createOne(['resume_id' => $resume->id]);
-        $experience->stacks()->attach([$vue->id => ['sort' => 0], $php->id => ['sort' => 1]]);
+        ResumeExperienceProject::factory()->createOne(['resume_experience_id' => $experience->id, 'name' => 'PippoSAS', 'sort_order' => 1]);
+        $equally = ResumeExperienceProject::factory()->createOne([
+            'resume_experience_id' => $experience->id,
+            'name' => 'Equally',
+            'role' => 'Tech Lead',
+            'description' => '<ul><li><p>Пункт</p></li></ul>',
+            'is_visible' => false,
+            'sort_order' => 0,
+        ]);
+        $equally->stacks()->attach([$vue->id => ['sort' => 0], $php->id => ['sort' => 1]]);
 
         $rows = array_values(Livewire::test(EditResumeExperiences::class, ['record' => $resume->id])->get('data.experiences'));
 
-        $this->assertSame([$vue->id, $php->id], array_map(intval(...), $rows[0]['stacks']));
+        /** @var list<array<string, mixed>> $projects */
+        $projects = array_values($rows[0]['projects']);
 
-        $rows[0]['stacks'] = [$php->id];
+        $this->assertSame(['Equally', 'PippoSAS'], array_column($projects, 'name'));
+        $this->assertSame('Tech Lead', $projects[0]['role']);
+        $this->assertFalse($projects[0]['is_visible']);
+        $this->assertIsArray($projects[0]['stacks']);
+        $this->assertSame([$vue->id, $php->id], array_map(intval(...), $projects[0]['stacks']));
+        $this->assertNotEmpty($projects[0]['description']);
+    }
+
+    /**
+     * @return void
+     */
+    public function testSavesProjectsWithStacksAndVisibility(): void
+    {
+        $php = Stack::factory()->createOne();
+        $laravel = Stack::factory()->createOne();
+        $resume = Resume::factory()->createOne(['user_id' => $this->user->id]);
 
         Livewire::test(EditResumeExperiences::class, ['record' => $resume->id])
-            ->fillForm(['experiences' => $rows])
+            ->fillForm(['experiences' => [
+                ['company' => 'GiraffeSoftware', 'position' => 'Dev', 'start_date' => '2024-09-01', 'is_visible' => true, 'projects' => [
+                    ['name' => 'Equally', 'role' => 'Tech Lead', 'is_visible' => true, 'stacks' => [$laravel->id, $php->id], 'description' => '<ul><li><p>Пункт</p></li></ul>'],
+                    ['name' => 'PippoSAS', 'role' => '', 'is_visible' => false, 'stacks' => []],
+                ]],
+            ]])
             ->call('save')
             ->assertHasNoFormErrors();
 
-        $this->assertSame([$php->id], $resume->experiences()->sole()->stacks->modelKeys());
+        $projects = $resume->experiences()->sole()->projects()->with('stacks')->get();
+
+        $this->assertSame(['Equally', 'PippoSAS'], $projects->pluck('name')->all());
+        $this->assertSame('Tech Lead', $projects[0]->role);
+        $this->assertSame([$laravel->id, $php->id], $projects[0]->stacks->modelKeys());
+        $this->assertStringContainsString('<li>', (string) $projects[0]->description);
+        $this->assertNull($projects[1]->role);
+        $this->assertFalse($projects[1]->is_visible);
+    }
+
+    /**
+     * @param array<string, mixed> $override
+     * @param string $field
+     *
+     * @return void
+     */
+    #[DataProvider('invalidProjects')]
+    public function testRejectsInvalidProjects(array $override, string $field): void
+    {
+        $resume = Resume::factory()->createOne(['user_id' => $this->user->id]);
+        ResumeExperience::factory()->createOne(['resume_id' => $resume->id, 'company' => 'MacPaw']);
+        $project = array_merge(['name' => 'Equally', 'is_visible' => true], $override);
+
+        Livewire::test(EditResumeExperiences::class, ['record' => $resume->id])
+            ->fillForm(['experiences' => [
+                ['company' => 'Preply', 'position' => 'Dev', 'start_date' => '2021-03-01', 'projects' => [$project]],
+            ]])
+            ->call('save')
+            ->assertHasFormErrors(["experiences.0.projects.0.$field"]);
+
+        $this->assertSame(['MacPaw'], $resume->experiences()->pluck('company')->all());
+        $this->assertSame(0, ResumeExperienceProject::query()->count());
+    }
+
+    /**
+     * @return array<string, array{array<string, mixed>, string}>
+     */
+    public static function invalidProjects(): array
+    {
+        return [
+            'без назви' => [['name' => ''], 'name'],
+            'довга назва' => [['name' => str_repeat('a', 256)], 'name'],
+            'довга роль' => [['role' => str_repeat('a', 256)], 'role'],
+        ];
     }
 
     /**

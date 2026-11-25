@@ -4,10 +4,8 @@ namespace App\Containers\AppSection\Resume\UI\Filament\Resources\Resumes\Schemas
 
 use App\Containers\AppSection\Resume\Enums\ResumeEmploymentType;
 use App\Containers\AppSection\Resume\Models\ResumeExperience;
-use App\Containers\AppSection\Stack\UI\Filament\Components\StackSelect;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -56,13 +54,7 @@ final class ResumeExperiencesRepeater
                     ->native(false)
                     ->displayFormat('m.Y')
                     ->afterOrEqual('start_date'),
-                StackSelect::make('stacks', 'Технології')
-                    ->columnSpanFull(),
-                RichEditor::make('description')
-                    ->label('Опис ролі')
-                    ->toolbarButtons([['bold', 'italic', 'link'], ['bulletList', 'orderedList'], ['undo', 'redo']])
-                    ->fileAttachments(false)
-                    ->columnSpanFull(),
+                ResumeExperienceProjectsRepeater::make(),
             ])
             ->columns(2)
             ->defaultItems(0)
@@ -95,9 +87,8 @@ final class ResumeExperiencesRepeater
                 'employment_type' => $experience->employment_type?->value,
                 'start_date' => $experience->start_date->toDateString(),
                 'end_date' => $experience->end_date?->toDateString(),
-                'description' => $experience->description,
-                'stacks' => $experience->stacks->modelKeys(),
                 'is_visible' => $experience->is_visible,
+                'projects' => ResumeExperienceProjectsRepeater::stateFrom($experience->projects),
             ])
             ->all());
     }

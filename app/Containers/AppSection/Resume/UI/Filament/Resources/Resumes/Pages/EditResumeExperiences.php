@@ -51,6 +51,6 @@ final class EditResumeExperiences extends EditRecord
         /** @var Resume $resume */
         $resume = $this->getRecord();
 
-        return ['experiences' => ResumeExperiencesRepeater::stateFrom($resume->load('experiences.stacks')->experiences)];
+        return ['experiences' => ResumeExperiencesRepeater::stateFrom($resume->load('experiences.projects.stacks')->experiences)];
     }
 }
